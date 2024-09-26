@@ -24,7 +24,7 @@
 
                     // our two characters
                     this.load.spritesheet('player', 'assets/sprites/character_sprites.png', { frameWidth: 100, frameHeight: 100 });
-
+                    this.load.image("sky", "assets/sky.png");
                     this.load.image("dragonblue", "assets/dragonblue.png");
                     this.load.image("dragonorrange", "assets/dragonorrange.png");
                 },
@@ -45,6 +45,8 @@
                 preload: function() {
                 
                 },
+
+                moveMode: "false",
 
                 create: function () {
                     // this.add.image(0, 0, 'bg').setOrigin(0, 0);
@@ -99,7 +101,7 @@
                     });
 
                     this.cursors = this.input.keyboard.createCursorKeys();
-                    this.moveMode = false;
+
                     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
                     this.cameras.main.startFollow(this.player);
                     this.cameras.main.roundPixels = true;
@@ -117,45 +119,19 @@
                     let playerRef = this.player
                     let currentlyMovingRef = () => {this.currentlyMoving()}
                     this.player.on('pointerdown', function (pointer) {
-                        if (!this.moveMode) {
-                            this.moveMode = true
+                        if (!playerRef.moveMode) {
+                            playerRef.moveMode = true;
                             playerRef.alpha = 0.6;
-                            currentlyMovingRef()
+                        } else {
+                            playerRef.movableLocations.destroy(true)
+                            playerRef.moveMode = false;
+                            playerRef.alpha = 1;
                         }
                     })
 
     //              this.physics.add.overlap(this.player, this.spawns, this.onMeetEnemy, false, this);
                 },
-
-                currentlyMoving: async function () {
-                    let movableLocations = this.physics.add.group({ classType: Phaser.GameObjects.Zone })
-                    let playerRef = this.player
-                    let moveModeRef = this.moveMode
-                    for await (let i of [-3,-2,2,3]) {
-                        for (let u of [-3, -2, 2, 3]) {
-                            // parameters are x, y, width, height
-                            movableLocations.create((playerRef.x + (i * 100)) + 50, (playerRef.y + (u * 100)) + 50, 100, 100);
-                        }
-                    }
-
-                    playerRef.on('pointerdown', function (pointer) {
-                        if (moveModeRef) {
-                            this.destroy(true)
-                            moveModeRef = false;
-                            playerRef.alpha = 1;
-                            this.off()
-                        }
-                    })
-
-                this.input.setHitArea(groupName.getChildren()).on.on('gameobjectdown', function (gameObject) {
-                            playerRef.setPosition(gameObject.x, gameObject.y);
-                            console.log("aaaaaaaaaa", gameObject)
-                            this.destroy(true)
-                            moveModeRef = false;
-                            playerRef.alpha = 1;
-                            this.off()
-                        });
-                },
+                movableLocations: null,
 
                 onMeetEnemy: function (player, zone) {
                     // we move the zone to some other location
@@ -169,37 +145,64 @@
                 },
 
                 update: function (time, delta) {
-                    this.player.body.setVelocity(0);
-                    // Horizontal movement
-                    if (this.cursors.left.isDown) {
-                        this.player.body.setVelocityX(-80);
+                    console.log(this.player.moveMode, this.player.alpha)
+                    if (this.player.moveMode && (!this.player.movableLocations || (this.player.movableLocations && !this.player.movableLocations.children))) {
+                        this.player.movableLocations  = this.physics.add.group({ classType: Phaser.GameObjects.Image });
+                        let movableLocationsRef = this.player.movableLocations 
+                        let playerRef = this.player
+                        let moveModeRef = this.moveMode
+                        for (let i of [-2,-1,1,2]) {
+                            for (let u of [-2, -1, 1, 2]) {
+                                // parameters are x, y, width, height
+                                movableLocationsRef.create((playerRef.x + (i * 100)), (playerRef.y + (u * 100)), 'player', 6);
+                            }
+                        }
+                        movableLocationsRef.getChildren()[4].setInteractive()
+                        let clickLocation = movableLocationsRef.getChildren()[1].on('pointerdown', function (gameObject) {
+                            if (playerRef.moveMode) {
+                                playerRef.setPosition(gameObject.x, gameObject.y);
+                                console.log("aaaaaaaaaa", gameObject)
+                                movableLocationsRef.destroy(true)
+                                playerRef.moveMode = false;
+                                playerRef.alpha = 1;
+                                console.log(playerRef)
+                                this.off()
+                                clickOnPlayer.off()
+                                console.log("movable", movableLocationsRef.children)
+                            }
+                        });
                     }
-                    else if (this.cursors.right.isDown) {
-                        this.player.body.setVelocityX(80);
-                    }
-                    // Vertical movement
-                    if (this.cursors.up.isDown) {
-                        this.player.body.setVelocityY(-80);
-                    }
-                    else if (this.cursors.down.isDown) {
-                        this.player.body.setVelocityY(80);
-                    }    
 
-                    if (this.cursors.left.isDown) {
-                        this.player.anims.play('left', true);
-                    }
-                    else if (this.cursors.right.isDown) {
-                        this.player.anims.play('right', true);
-                    }
-                    else if (this.cursors.up.isDown) {
-                        this.player.anims.play('up', true);
-                    }
-                    else if (this.cursors.down.isDown) {
-                        this.player.anims.play('down', true);
-                    }
-                    else {
-                        this.player.anims.stop();
-                    }
+                    // // Horizontal movement
+                    // if (this.cursors.left.isDown) {
+                    //     this.player.body.setVelocityX(-80);
+                    // }
+                    // else if (this.cursors.right.isDown) {
+                    //     this.player.body.setVelocityX(80);
+                    // }
+                    // // Vertical movement
+                    // if (this.cursors.up.isDown) {
+                    //     this.player.body.setVelocityY(-80);
+                    // }
+                    // else if (this.cursors.down.isDown) {
+                    //     this.player.body.setVelocityY(80);
+                    // }    
+
+                    // if (this.cursors.left.isDown) {
+                    //     this.player.anims.play('left', true);
+                    // }
+                    // else if (this.cursors.right.isDown) {
+                    //     this.player.anims.play('right', true);
+                    // }
+                    // else if (this.cursors.up.isDown) {
+                    //     this.player.anims.play('up', true);
+                    // }
+                    // else if (this.cursors.down.isDown) {
+                    //     this.player.anims.play('down', true);
+                    // }
+                    // else {
+                    //     this.player.anims.stop();
+                    // }
                 }
             })
 
