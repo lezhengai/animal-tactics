@@ -16,23 +16,57 @@
                 },
 
                 preload: function () {
-                    // map tiles
                     this.load.image('tiles', 'assets/map/spritesheetmap1.png');
-
-                    // map in json format
                     this.load.tilemapTiledJSON('map', 'assets/map/map1.json');
 
-                    // our two characters
                     this.load.spritesheet('player', 'assets/sprites/character_sprites.png', { frameWidth: 100, frameHeight: 100 });
+                    this.load.spritesheet('zone', 'assets/sprites/zone_spritess.png', { frameWidth: 100, frameHeight: 100 });
                     this.load.image("sky", "assets/sky.png");
-                    this.load.image("dragonblue", "assets/dragonblue.png");
-                    this.load.image("dragonorrange", "assets/dragonorrange.png");
                 },
 
                 create: function () {
                     this.scene.start('WorldScene')
+                    this.scene.start('UIScene')
                 }
             });
+
+            let currentTurn = 1;
+            let playerTurn = true;
+
+            let UIScene = new Phaser.Class({
+                Extends: Phaser.Scene,
+                initialize:
+
+                    function UIScene() {
+                        Phaser.Scene.call(this, { key: 'UIScene' });
+                    },
+
+                preload: function () {
+
+                },
+
+                create: function () {
+                    this.UIBackground = this.add.graphics();
+                    this.UIBackground.lineStyle(1, 0xffffff);
+                    this.UIBackground.fillStyle("#000000")
+                    this.UIBackground.fillRect(100, 600, 1000, 100);
+                    this.turnText = this.add.text(120, 620, `Turn ${currentTurn} - ${playerTurn ? 'Player Turn' : 'Ennermy Turn'}`, { fontSize: "32px", color: "#FFFFFF", fontFamily: "Impact" });
+                    this.currentTurn = currentTurn
+                    this.playerTurn = playerTurn
+                },
+                update: function () {
+                    if (this.currentTurn !== currentTurn) {
+                        this.turnText.destroy();
+                        this.turnText = this.add.text(120, 620, `Turn ${currentTurn} - ${playerTurn ? 'Player Turn' : 'Ennemy Turn'}`, { fontSize: "32px", color: "#FFFFFF", fontFamily: "Impact" });
+                        this.currentTurn = currentTurn
+                    }
+                    if (this.playerTurn !== playerTurn) {
+                        this.turnText.destroy();
+                        this.turnText = this.add.text(120, 620, `Turn ${currentTurn} - ${playerTurn ? 'Player Turn' : 'Ennemy Turn'}`, { fontSize: "32px", color: "#FFFFFF", fontFamily: "Impact" });
+                        this.currentTurn = currentTurn
+                    }
+                }
+            })
 
             let WorldScene = new Phaser.Class({
                 Extends: Phaser.Scene,
@@ -46,33 +80,54 @@
                 
                 },
 
-                moveMode: "false",
-
                 create: function () {
-                    // this.add.image(0, 0, 'bg').setOrigin(0, 0);
                     let map = this.add.tilemap('map');
-
-                    // const logo = this.physics.add.image(100, 100, 'obj_1');
-                    // logo.setInteractive();
-                    // logo.setScale(0.05);
-                    // logo.setVelocity(100, 200);
-                    // logo.setBounce(1, 1);
-                    // logo.setCollideWorldBounds(true);
-
-
 
                     let tiles = map.addTilesetImage('spritesheetmap1', 'tiles');
 
                     let grass = map.createLayer('Grass', tiles);
                     let obstacles = map.createLayer('Obstacles', tiles);
-                    obstacles.setCollisionByExclusion([-1]);
+                    let squareLayer = this.add.layer();
+                    let charactersLayer = this.add.layer();
+                    
 
-                    this.player = this.physics.add.sprite(250, 250, 'player', 6);
+                    this.squares = {}
+                    for (let i = 0; i < (map.widthInPixels / 100); i++) {
+                        for (let u = 0; u < (map.heightInPixels / 100); u++) {
+                            // parameters are x, y, width, height
+                            let square = this.add.sprite((i * 100) + 50, (u * 100) + 50, 'zone', 0);
+                            square.setInteractive();
+                            square.coordinates = `${i}-${u}`
+                            squareLayer.add(square)
+                            this.followText = this.add.text(0, 0, square.coordinates);
+                            this.followText.setPosition(square.x, square.y);
+                            square.alpha = 0.1
+                            this.squares[square.coordinates] = square;
+                        }
+                    }
+                    this.obstaclesLocation = ["0-0", "1-0", "2-0", "3-0", "0-1" , "0-2", "4-2", "5-2", "6-2", "7-2", "4-3", "5-3", "6-3", "7-3", "4-4", "5-4", "6-4", "7-4", "11-4", "11-5", "11-6", "10-6", "9-6", "8-6"]
+
+                    this.player = this.physics.add.sprite(0, 0, 'player', 15);
+                    this.player.squarePosition = "1-5"
                     this.player.setInteractive();
-                    this.physics.world.bounds.width = map.widthInPixels;
-                    this.physics.world.bounds.height = map.heightInPixels;
-                    this.player.setCollideWorldBounds(true);
-                    this.physics.add.collider(this.player, obstacles);
+                    this.player.setPosition(this.squares["1-5"].x, this.squares["1-5"].y);
+                    this.player.hp = 5;
+                    this.player.attack = 2;
+                    this.player.defense = 1;
+                    this.player.actionsPerTurn = 2;
+                    this.player.actionsLeft = this.player.actionsPerTurn;
+                    charactersLayer.add([this.player])
+
+                    
+                    this.ennemy = this.physics.add.sprite(0, 0, 'player', 6);
+                    this.ennemy.squarePosition = "10-1"
+                    this.ennemy.setPosition(this.squares["10-1"].x, this.squares["10-1"].y);
+                    this.ennemy.hp = 3;
+                    this.ennemy.attack = 2;
+                    this.ennemy.defense = 1;
+                    this.ennemy.actionsPerTurn = 2;
+                    this.ennemy.actionsLeft = this.ennemy.actionsPerTurn;
+                    charactersLayer.add([this.ennemy])
 
                     this.anims.create({
                         key: 'left',
@@ -102,30 +157,31 @@
 
                     this.cursors = this.input.keyboard.createCursorKeys();
 
+
+
                     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
                     this.cameras.main.startFollow(this.player);
                     this.cameras.main.roundPixels = true;
 
-                    // this.spawns = this.physics.add.group({ classType: Phaser.GameObjects.Zone })
-
-                    // for (var i = 0; i < 12; i++) {
-                    //     for (var u = 0; u < 7; u++) {
-                    //         // parameters are x, y, width, height
-                    //         this.spawns.create((i * 100) + 50, (u * 100) + 50, 100, 100);
-                    //     }
-
-                    // }
 
                     let playerRef = this.player
-                    let currentlyMovingRef = () => {this.currentlyMoving()}
+                    let squaresRef = this.squares
                     this.player.on('pointerdown', function (pointer) {
-                        if (!playerRef.moveMode) {
-                            playerRef.moveMode = true;
-                            playerRef.alpha = 0.6;
-                        } else {
-                            playerRef.movableLocations.destroy(true)
-                            playerRef.moveMode = false;
-                            playerRef.alpha = 1;
+                        if (playerTurn) {
+                            if (!playerRef.moveMode) {
+                                playerRef.moveMode = true;
+                                playerRef.alpha = 0.6;
+                            } else {
+                                playerRef.movableLocations.forEach(location => {
+                                    if (squaresRef[location]) {
+                                        squaresRef[location].alpha = 0.1
+                                        squaresRef[location].off('pointerdown')
+                                    }
+                                });
+                                playerRef.movableLocations = []
+                                playerRef.moveMode = false;
+                                playerRef.alpha = 1;
+                            }
                         }
                     })
 
@@ -144,33 +200,204 @@
                     this.scene.switch('BattleScene');
                 },
 
-                update: function (time, delta) {
-                    console.log(this.player.moveMode, this.player.alpha)
-                    if (this.player.moveMode && (!this.player.movableLocations || (this.player.movableLocations && !this.player.movableLocations.children))) {
-                        this.player.movableLocations  = this.physics.add.group({ classType: Phaser.GameObjects.Image });
-                        let movableLocationsRef = this.player.movableLocations 
-                        let playerRef = this.player
-                        let moveModeRef = this.moveMode
-                        for (let i of [-2,-1,1,2]) {
-                            for (let u of [-2, -1, 1, 2]) {
-                                // parameters are x, y, width, height
-                                movableLocationsRef.create((playerRef.x + (i * 100)), (playerRef.y + (u * 100)), 'player', 6);
+                update: async function (time, delta) {
+                    if (this.ennemy.hp <= 0) {
+                        this.ennemy.squarePosition = null
+                        this.ennemy.alpha = 0
+                    }
+
+                    console.log(currentTurn, (playerTurn ? "Player Turn" : "Ennemy Turn"))
+                    if (this.player.actionsLeft == 0) {
+                        playerTurn = false;
+                    }
+
+                    if (this.ennemy.actionsLeft == 0) {
+                        currentTurn++;
+                        this.player.actionsLeft = this.player.actionsPerTurn;
+                        this.ennemy.actionsLeft = this.ennemy.actionsPerTurn
+                        playerTurn = true;
+                    }
+                    
+                    // Character Movement Animation Management
+                    if (this.player.inMovement && this.player.inMovement.is) {
+                        if (this.player.body.speed > 0) {
+                            if (Phaser.Math.Distance.BetweenPoints(this.player, this.player.inMovement.destination) < 4) {
+                                this.player.body.reset(this.player.inMovement.destination.x, this.player.inMovement.destination.y);
+                                this.player.body.speed = 0
+                                this.player.inMovement = { is: false }
                             }
                         }
-                        movableLocationsRef.getChildren()[4].setInteractive()
-                        let clickLocation = movableLocationsRef.getChildren()[1].on('pointerdown', function (gameObject) {
-                            if (playerRef.moveMode) {
-                                playerRef.setPosition(gameObject.x, gameObject.y);
-                                console.log("aaaaaaaaaa", gameObject)
-                                movableLocationsRef.destroy(true)
-                                playerRef.moveMode = false;
-                                playerRef.alpha = 1;
-                                console.log(playerRef)
-                                this.off()
-                                clickOnPlayer.off()
-                                console.log("movable", movableLocationsRef.children)
+                    }
+
+                    if (this.player.moveMode && (!this.player.movableLocations || (this.player.movableLocations && this.player.movableLocations.length == 0))) {
+                        this.player.movableLocations  = [];
+                        let movableLocationsRef = this.player.movableLocations 
+                        let playerRef = this.player
+                        let ennemyRef = this.ennemy
+                        let squaresRef = this.squares
+                        let obstaclesLocationRef = this.obstaclesLocation
+                        let physicsRef = this.physics
+                        let cameraRef = this.cameras
+                        let tweensRef = this.tweens
+                        let that = this;
+                        for (let i of [-2,-1,0,1,2]) {
+                            for (let u of [-1,0,1]) {
+                                if (!(i == 0 && u == 0)) {
+                                    // parameters are x, y, width, height
+                                    const locationToPush = `${parseInt(playerRef.squarePosition.split('-')[0]) + i}-${parseInt(playerRef.squarePosition.split('-')[1]) + u}`
+                                    if (!obstaclesLocationRef.includes(locationToPush)){
+                                        movableLocationsRef.push(locationToPush)
+                                    }
+                                }
+
                             }
+                        }
+
+                        function offLocationClickEvent() {
+                            movableLocationsRef.forEach(location => {
+                                if (squaresRef[location]) {
+                                    squaresRef[location].alpha = 0.1
+                                    squaresRef[location].off('pointerdown')
+                                }
+                            });
+                        }
+                        
+                        movableLocationsRef.forEach(location => {
+                            if (squaresRef[location]) {
+                                squaresRef[location].alpha = 1
+                                squaresRef[location].on('pointerdown', function (pointer) {
+                                    if (playerRef.moveMode) {
+                                        console.log(playerRef.squarePosition, location)
+                                        if (location == ennemyRef.squarePosition) {
+                                            offLocationClickEvent()
+                                            cameraRef.main.shake(200);
+                                            let damage = playerRef.attack - ennemyRef.defense
+                                            if (damage >= 0) {
+                                                ennemyRef.hp = ennemyRef.hp - damage
+                                                let damageText = that.add.text(0, 0, `-${damage}`, {fontSize: "32px", color: "#FF0000", fontFamily: "Impact"});
+                                                damageText.alpha = 1
+                                                damageText.setPosition(ennemyRef.x+50, ennemyRef.y-50);
+                                                tweensRef.add({
+                                                    targets: damageText,
+                                                    alpha: 0,
+                                                    y: damageText.y-50,
+                                                    duration: 3000,
+                                                    ease: 'Power2'
+                                                }, that);
+                                            }
+                                            playerRef.movableLocations = []
+                                            playerRef.moveMode = false;
+                                            playerRef.alpha = 1;
+                                            playerRef.actionDone = true
+                                        } else {
+                                            offLocationClickEvent()
+                                            physicsRef.moveToObject(playerRef, squaresRef[location], 500);
+                                            playerRef.inMovement = {is: true, destination: squaresRef[location] }
+                                            playerRef.squarePosition = location
+                                            playerRef.movableLocations = []
+                                            playerRef.moveMode = false;
+                                            playerRef.alpha = 1;
+                                            playerRef.movementDone = true;
+                                        }
+                                        playerRef.actionsLeft--
+                                    }
+                                })
+                            }
+                            
                         });
+                    }
+
+                    // Character Movement Animation Management
+                    if (this.ennemy.inMovement && this.ennemy.inMovement.is) {
+                        if (this.ennemy.body.speed > 0) {
+                            if (Phaser.Math.Distance.BetweenPoints(this.ennemy, this.ennemy.inMovement.destination) < 4) {
+                                this.ennemy.body.reset(this.ennemy.inMovement.destination.x, this.ennemy.inMovement.destination.y);
+                                this.ennemy.body.speed = 0
+                                this.ennemy.inMovement = { is: false }
+                            }
+                        }
+                    }
+
+                    if (!playerTurn && this.ennemy.hp > 0) {
+                        this.ennemy.moveMode = true
+                        this.ennemy.movableLocations = [];
+                        let movableLocationsRef = this.ennemy.movableLocations
+                        let playerRef = this.player
+                        let ennemyRef = this.ennemy
+                        let squaresRef = this.squares
+                        let obstaclesLocationRef = this.obstaclesLocation
+                        let physicsRef = this.physics
+                        let cameraRef = this.cameras
+                        let tweensRef = this.tweens
+                        let that = this;
+                        for (let i of [-2, -1, 0, 1, 2]) {
+                            for (let u of [-1, 0, 1]) {
+                                if (!(i == 0 && u == 0)) {
+                                    // parameters are x, y, width, height
+                                    const locationToPush = `${parseInt(ennemyRef.squarePosition.split('-')[0]) + i}-${parseInt(ennemyRef.squarePosition.split('-')[1]) + u}`
+                                    if (!obstaclesLocationRef.includes(locationToPush)) {
+                                        movableLocationsRef.push(locationToPush)
+                                    }
+                                }
+
+                            }
+                        }
+
+                        async function offLocationClickEvent() {
+                            await Promise.all(movableLocationsRef.map((location) => {
+                                if (squaresRef[location]) {
+                                    squaresRef[location].alpha = 0.1
+                                    console.log(squaresRef[location].alpha)
+                                }
+                            }));
+                            
+                        }
+                        let selectedLocation = movableLocationsRef[Math.floor(Math.random() * movableLocationsRef.length)];
+
+                        await Promise.all(movableLocationsRef.map((location) => {
+                            if (squaresRef[location]) {
+                                squaresRef[location].alpha = 1
+
+                                if (location == selectedLocation) {
+                                    if (ennemyRef.moveMode) {
+                                        console.log(location, selectedLocation)
+                                        if (location == ennemyRef.squarePosition) {
+                                            offLocationClickEvent()
+                                            cameraRef.main.shake(200);
+                                            let damage = ennemyRef.attack - playerRef.defense
+                                            if (damage >= 0) {
+                                                playerRef.hp = playerRef.hp - damage
+                                                let damageText = that.add.text(0, 0, `-${damage}`, { fontSize: "32px", color: "#FF0000", fontFamily: "Impact" });
+                                                damageText.alpha = 1
+                                                damageText.setPosition(playerRef.x + 50, playerRef.y - 50);
+                                                tweensRef.add({
+                                                    targets: damageText,
+                                                    alpha: 0,
+                                                    y: damageText.y - 50,
+                                                    duration: 3000,
+                                                    ease: 'Power2'
+                                                }, that);
+                                            }
+                                            ennemyRef.movableLocations = []
+                                            ennemyRef.moveMode = false;
+                                            ennemyRef.alpha = 1;
+                                            ennemyRef.actionDone = true
+                                        } else {
+                                            offLocationClickEvent()
+                                            physicsRef.moveToObject(ennemyRef, squaresRef[location], 500);
+                                            ennemyRef.inMovement = { is: true, destination: squaresRef[location] }
+                                            ennemyRef.squarePosition = location
+                                            ennemyRef.movableLocations = []
+                                            ennemyRef.moveMode = false;
+                                            ennemyRef.alpha = 1;
+                                            ennemyRef.movementDone = true;
+                                        }
+                                        ennemyRef.actionsLeft--
+                                    }
+                                }
+                            }
+
+                        }));
                     }
 
                     // // Horizontal movement
@@ -214,7 +441,8 @@
                 pixelArt: true,
                 scene: [
                     BootScene,
-                    WorldScene
+                    WorldScene,
+                    UIScene
                 ],
                 physics: {
                     default: 'arcade',
