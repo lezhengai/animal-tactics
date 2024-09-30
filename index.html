@@ -32,6 +32,7 @@
 
             let currentTurn = 1;
             let playerTurn = true;
+            let winner = null;
 
             let UIScene = new Phaser.Class({
                 Extends: Phaser.Scene,
@@ -64,6 +65,10 @@
                         this.turnText.destroy();
                         this.turnText = this.add.text(120, 620, `Turn ${currentTurn} - ${playerTurn ? 'Player Turn' : 'Ennemy Turn'}`, { fontSize: "32px", color: "#FFFFFF", fontFamily: "Impact" });
                         this.currentTurn = currentTurn
+                    }
+                    if (winner) {
+                        this.turnText.destroy();
+                        this.turnText = this.add.text(120, 620, `Winner : ${winner}`, { fontSize: "32px", color: "#FFFFFF", fontFamily: "Impact" });
                     }
                 }
             })
@@ -112,22 +117,37 @@
                     this.player.setInteractive();
                     this.player.setPosition(this.squares["1-5"].x, this.squares["1-5"].y);
                     this.player.hp = 5;
+                    this.player.maxHP = this.player.hp;
                     this.player.attack = 2;
                     this.player.defense = 1;
                     this.player.actionsPerTurn = 2;
                     this.player.actionsLeft = this.player.actionsPerTurn;
                     charactersLayer.add([this.player])
 
-                    
+                    this.playerHealthBar = this.add.graphics();
+                    this.playerHealthBar.fillStyle(0xe74c3c, 1)
+                    this.playerHealthBar.lineStyle(1, 0xffffff);
+                    this.playerHealthBar.fillRect(0, 0, 100, 10);
+                    this.playerHealthBar.x = this.player.x - 50
+                    this.playerHealthBar.y = this.player.y - 50
+
                     this.ennemy = this.physics.add.sprite(0, 0, 'player', 6);
                     this.ennemy.squarePosition = "10-1"
                     this.ennemy.setPosition(this.squares["10-1"].x, this.squares["10-1"].y);
                     this.ennemy.hp = 3;
+                    this.ennemy.maxHP = this.ennemy.hp;
                     this.ennemy.attack = 2;
                     this.ennemy.defense = 1;
                     this.ennemy.actionsPerTurn = 2;
                     this.ennemy.actionsLeft = this.ennemy.actionsPerTurn;
                     charactersLayer.add([this.ennemy])
+
+                    this.ennemyHealthBar = this.add.graphics();
+                    this.ennemyHealthBar.fillStyle(0xe74c3c, 1)
+                    this.ennemyHealthBar.lineStyle(1, 0xffffff);
+                    this.ennemyHealthBar.fillRect(0, 0, 100, 10);
+                    this.ennemyHealthBar.x = this.ennemy.x - 50
+                    this.ennemyHealthBar.y = this.ennemy.y - 50
 
                     this.anims.create({
                         key: 'left',
@@ -201,9 +221,17 @@
                 },
 
                 update: async function (time, delta) {
-                    if (this.ennemy.hp <= 0) {
+                    if (this.ennemy.hp <= 0 && this.ennemy.squarePosition) {
                         this.ennemy.squarePosition = null
                         this.ennemy.alpha = 0
+                        winner = "Player"
+                        Phaser.Display.Color.alpha = 100
+                    }
+                    if (this.player.hp <= 0 && this.player.squarePosition) {
+                        this.player.squarePosition = null
+                        this.player.alpha = 0
+                        winner = "Ennemy"
+                        Phaser.Display.Color.alpha = 100
                     }
 
                     console.log(currentTurn, (playerTurn ? "Player Turn" : "Ennemy Turn"))
@@ -223,6 +251,9 @@
                         if (this.player.body.speed > 0) {
                             if (Phaser.Math.Distance.BetweenPoints(this.player, this.player.inMovement.destination) < 4) {
                                 this.player.body.reset(this.player.inMovement.destination.x, this.player.inMovement.destination.y);
+                                this.playerHealthBar.x = this.player.x-50
+                                this.playerHealthBar.y = this.player.y-50
+                                this.playerHealthBar.alpha = 1
                                 this.player.body.speed = 0
                                 this.player.inMovement = { is: false }
                             }
@@ -274,6 +305,7 @@
                                             let damage = playerRef.attack - ennemyRef.defense
                                             if (damage >= 0) {
                                                 ennemyRef.hp = ennemyRef.hp - damage
+                                                that.ennemyHealthBar.scaleX = ennemyRef.hp / ennemyRef.maxHP;
                                                 let damageText = that.add.text(0, 0, `-${damage}`, {fontSize: "32px", color: "#FF0000", fontFamily: "Impact"});
                                                 damageText.alpha = 1
                                                 damageText.setPosition(ennemyRef.x+50, ennemyRef.y-50);
@@ -292,6 +324,7 @@
                                         } else {
                                             offLocationClickEvent()
                                             physicsRef.moveToObject(playerRef, squaresRef[location], 500);
+                                            that.playerHealthBar.alpha = 0
                                             playerRef.inMovement = {is: true, destination: squaresRef[location] }
                                             playerRef.squarePosition = location
                                             playerRef.movableLocations = []
@@ -310,15 +343,19 @@
                     // Character Movement Animation Management
                     if (this.ennemy.inMovement && this.ennemy.inMovement.is) {
                         if (this.ennemy.body.speed > 0) {
+                            console.log(this.ennemy.inMovement.is)
                             if (Phaser.Math.Distance.BetweenPoints(this.ennemy, this.ennemy.inMovement.destination) < 4) {
                                 this.ennemy.body.reset(this.ennemy.inMovement.destination.x, this.ennemy.inMovement.destination.y);
+                                this.ennemyHealthBar.x = this.ennemy.x - 50
+                                this.ennemyHealthBar.y = this.ennemy.y - 50
+                                this.ennemyHealthBar.alpha = 1
                                 this.ennemy.body.speed = 0
                                 this.ennemy.inMovement = { is: false }
                             }
                         }
                     }
 
-                    if (!playerTurn && this.ennemy.hp > 0) {
+                    if (!playerTurn && this.ennemy.hp > 0 && (!this.ennemy.inMovement || (this.ennemy.inMovement && !this.ennemy.inMovement.is))) {
                         this.ennemy.moveMode = true
                         this.ennemy.movableLocations = [];
                         let movableLocationsRef = this.ennemy.movableLocations
@@ -342,63 +379,49 @@
 
                             }
                         }
-
-                        async function offLocationClickEvent() {
-                            await Promise.all(movableLocationsRef.map((location) => {
-                                if (squaresRef[location]) {
-                                    squaresRef[location].alpha = 0.1
-                                    console.log(squaresRef[location].alpha)
-                                }
-                            }));
-                            
+                        let selectedLocation;
+                        if (movableLocationsRef.includes(playerRef.squarePosition)) {
+                            selectedLocation = playerRef.squarePosition
+                        } else {
+                            selectedLocation = movableLocationsRef[Math.floor(Math.random() * movableLocationsRef.length)];
                         }
-                        let selectedLocation = movableLocationsRef[Math.floor(Math.random() * movableLocationsRef.length)];
 
-                        await Promise.all(movableLocationsRef.map((location) => {
-                            if (squaresRef[location]) {
-                                squaresRef[location].alpha = 1
-
-                                if (location == selectedLocation) {
-                                    if (ennemyRef.moveMode) {
-                                        console.log(location, selectedLocation)
-                                        if (location == ennemyRef.squarePosition) {
-                                            offLocationClickEvent()
-                                            cameraRef.main.shake(200);
-                                            let damage = ennemyRef.attack - playerRef.defense
-                                            if (damage >= 0) {
-                                                playerRef.hp = playerRef.hp - damage
-                                                let damageText = that.add.text(0, 0, `-${damage}`, { fontSize: "32px", color: "#FF0000", fontFamily: "Impact" });
-                                                damageText.alpha = 1
-                                                damageText.setPosition(playerRef.x + 50, playerRef.y - 50);
-                                                tweensRef.add({
-                                                    targets: damageText,
-                                                    alpha: 0,
-                                                    y: damageText.y - 50,
-                                                    duration: 3000,
-                                                    ease: 'Power2'
-                                                }, that);
-                                            }
-                                            ennemyRef.movableLocations = []
-                                            ennemyRef.moveMode = false;
-                                            ennemyRef.alpha = 1;
-                                            ennemyRef.actionDone = true
-                                        } else {
-                                            offLocationClickEvent()
-                                            physicsRef.moveToObject(ennemyRef, squaresRef[location], 500);
-                                            ennemyRef.inMovement = { is: true, destination: squaresRef[location] }
-                                            ennemyRef.squarePosition = location
-                                            ennemyRef.movableLocations = []
-                                            ennemyRef.moveMode = false;
-                                            ennemyRef.alpha = 1;
-                                            ennemyRef.movementDone = true;
-                                        }
-                                        ennemyRef.actionsLeft--
-                                    }
+                        if (ennemyRef.moveMode) {
+                            if (selectedLocation == playerRef.squarePosition) {
+                                cameraRef.main.shake(200);
+                                let damage = ennemyRef.attack - playerRef.defense
+                                if (damage >= 0) {
+                                    playerRef.hp = playerRef.hp - damage
+                                    that.playerHealthBar.scaleX = playerRef.hp / playerRef.maxHP;
+                                    let damageText = that.add.text(0, 0, `-${damage}`, { fontSize: "32px", color: "#FF0000", fontFamily: "Impact" });
+                                    damageText.alpha = 1
+                                    damageText.setPosition(playerRef.x + 50, playerRef.y - 50);
+                                    tweensRef.add({
+                                        targets: damageText,
+                                        alpha: 0,
+                                        y: damageText.y - 100,
+                                        duration: 1000,
+                                        ease: 'Power2'
+                                    }, that);
                                 }
+                                ennemyRef.movableLocations = []
+                                ennemyRef.moveMode = false;
+                                ennemyRef.alpha = 1;
+                                ennemyRef.actionDone = true
+                                console.log("action", ennemyRef.actionsLeft, "player hp", playerRef.hp)
+                            } else {
+                                physicsRef.moveToObject(ennemyRef, squaresRef[selectedLocation], 500);
+                                ennemyRef.inMovement = { is: true, destination: squaresRef[selectedLocation] }
+                                ennemyRef.squarePosition = selectedLocation
+                                ennemyRef.movableLocations = []
+                                ennemyRef.moveMode = false;
+                                ennemyRef.alpha = 1;
+                                ennemyRef.movementDone = true;
                             }
-
-                        }));
+                            ennemyRef.actionsLeft--
+                        }
                     }
+                    playerTurn
 
                     // // Horizontal movement
                     // if (this.cursors.left.isDown) {
