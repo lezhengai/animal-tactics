@@ -50,25 +50,25 @@
                     this.UIBackground = this.add.graphics();
                     this.UIBackground.lineStyle(1, 0xffffff);
                     this.UIBackground.fillStyle("#000000")
-                    this.UIBackground.fillRect(100, 600, 1000, 100);
-                    this.turnText = this.add.text(120, 620, `Turn ${currentTurn} - ${playerTurn ? 'Player Turn' : 'Ennermy Turn'}`, { fontSize: "32px", color: "#FFFFFF", fontFamily: "Impact" });
+                    this.UIBackground.fillRect(450, 630, 300, 70);
+                    this.turnText = this.add.text(470, 650, `Turn ${currentTurn} - ${playerTurn ? 'Player Turn' : 'Ennermy Turn'}`, { fontSize: "24px", color: "#FFFFFF", fontFamily: "Impact" });
                     this.currentTurn = currentTurn
                     this.playerTurn = playerTurn
                 },
                 update: function () {
                     if (this.currentTurn !== currentTurn) {
                         this.turnText.destroy();
-                        this.turnText = this.add.text(120, 620, `Turn ${currentTurn} - ${playerTurn ? 'Player Turn' : 'Ennemy Turn'}`, { fontSize: "32px", color: "#FFFFFF", fontFamily: "Impact" });
+                        this.turnText = this.add.text(470, 650, `Turn ${currentTurn} - ${playerTurn ? 'Player Turn' : 'Ennemy Turn'}`, { fontSize: "24px", color: "#FFFFFF", fontFamily: "Impact" });
                         this.currentTurn = currentTurn
                     }
                     if (this.playerTurn !== playerTurn) {
                         this.turnText.destroy();
-                        this.turnText = this.add.text(120, 620, `Turn ${currentTurn} - ${playerTurn ? 'Player Turn' : 'Ennemy Turn'}`, { fontSize: "32px", color: "#FFFFFF", fontFamily: "Impact" });
+                        this.turnText = this.add.text(470, 650, `Turn ${currentTurn} - ${playerTurn ? 'Player Turn' : 'Ennemy Turn'}`, { fontSize: "24px", color: "#FFFFFF", fontFamily: "Impact" });
                         this.currentTurn = currentTurn
                     }
                     if (winner) {
                         this.turnText.destroy();
-                        this.turnText = this.add.text(120, 620, `${winner} wins`, { fontSize: "32px", color: "#FFFFFF", fontFamily: "Impact" });
+                        this.turnText = this.add.text(470, 650, `${winner} wins`, { fontSize: "24px", color: "#FFFFFF", fontFamily: "Impact" });
                     }
                 }
             })
@@ -83,6 +83,40 @@
 
                 preload: function() {
                 
+                },
+                /**
+                 * @param name String
+                 * @param sprite Number "1-32"
+                 * @param position String "x-y"
+                 * @param hp Number 
+                 * @param attack Number 
+                 * @param defense Number
+                 * @param actionsPerTurn Number
+                 *
+                 **/
+                createPlayer: function (name, sprite, position, hp, attack, defense, actionsPerTurn, playerType) {
+                    let player = this.physics.add.sprite(0, 0, 'player', sprite)
+                    player.squarePosition = position
+                    if (playerType == "player")
+                        player.setInteractive()
+
+                    player.setPosition(this.squares[position].x, this.squares[position].y);
+                    player.name = name
+                    player.hp = hp;
+                    player.maxHP = player.hp;
+                    player.attack = attack;
+                    player.defense = defense;
+                    player.actionsPerTurn = actionsPerTurn;
+                    player.actionsLeft = player.actionsPerTurn;
+
+                    player.healthBar = this.add.graphics();
+                    player.healthBar.fillStyle(0xe74c3c, 1)
+                    player.healthBar.lineStyle(1, 0xffffff);
+                    player.healthBar.fillRect(0, 0, 100, 10);
+                    player.healthBar.x = player.x - 50
+                    player.healthBar.y = player.y - 50
+                    player.nameText = this.add.text(player.healthBar.x-20, player.healthBar.y-5, player.name, { fontSize: "16px", color: "#FFFFFF", fontFamily: "Impact" });
+                    return player
                 },
 
                 create: function () {
@@ -114,86 +148,62 @@
                     
                     this.player = []
                     // Player 1
-                    let player1 = this.physics.add.sprite(0, 0, 'player', 15)
-                    player1.squarePosition = "1-5"
-                    player1.setInteractive();
-                    player1.setPosition(this.squares["1-5"].x, this.squares["1-5"].y);
-                    player1.hp = 5;
-                    player1.maxHP = player1.hp;
-                    player1.attack = 2;
-                    player1.defense = 1;
-                    player1.actionsPerTurn = 2;
-                    player1.actionsLeft = player1.actionsPerTurn;
-                    charactersLayer.add([player1])
+                    // let player1 = this.physics.add.sprite(0, 0, 'player', 15)
+                    // player1.squarePosition = "1-5"
+                    // player1.setInteractive();
+                    // player1.setPosition(this.squares["1-5"].x, this.squares["1-5"].y);
+                    // player1.hp = 5;
+                    // player1.maxHP = player1.hp;
+                    // player1.attack = 2;
+                    // player1.defense = 1;
+                    // player1.actionsPerTurn = 2;
+                    // player1.actionsLeft = player1.actionsPerTurn;
+                    // charactersLayer.add([player1])
                     
-                    player1.playerHealthBar = this.add.graphics();
-                    player1.playerHealthBar.fillStyle(0xe74c3c, 1)
-                    player1.playerHealthBar.lineStyle(1, 0xffffff);
-                    player1.playerHealthBar.fillRect(0, 0, 100, 10);
-                    player1.playerHealthBar.x = player1.x - 50
-                    player1.playerHealthBar.y = player1.y - 50
-
+                    // player1.playerHealthBar = this.add.graphics();
+                    // player1.playerHealthBar.fillStyle(0xe74c3c, 1)
+                    // player1.playerHealthBar.lineStyle(1, 0xffffff);
+                    // player1.playerHealthBar.fillRect(0, 0, 100, 10);
+                    // player1.playerHealthBar.x = player1.x - 50
+                    // player1.playerHealthBar.y = player1.y - 50
+                    let player1 = this.createPlayer("A", 15, "1-5", 5, 2, 1, 2, "player")
+                    let player2 = this.createPlayer("B", 15, "1-6", 5, 2, 1, 2, "player")
+                    let player3 = this.createPlayer("C", 15, "2-5", 5, 2, 1, 2, "player")
+                    let player4 = this.createPlayer("D", 15, "2-6", 5, 2, 1, 2, "player")
+                    charactersLayer.add([player1, player2, player3, player4])
                     this.player.push(player1);
-                    // Player 2
-                    let player2 = this.physics.add.sprite(0, 0, 'player', 15);
-                    player2.squarePosition = "2-5"
-                    player2.setInteractive();
-                    player2.setPosition(this.squares["2-5"].x, this.squares["2-5"].y);
-                    player2.hp = 5;
-                    player2.maxHP = player2.hp;
-                    player2.attack = 2;
-                    player2.defense = 1;
-                    player2.actionsPerTurn = 2;
-                    player2.actionsLeft = player2.actionsPerTurn;
-                    charactersLayer.add([player2])
-
-                    player2.playerHealthBar = this.add.graphics();
-                    player2.playerHealthBar.fillStyle(0xe74c3c, 1)
-                    player2.playerHealthBar.lineStyle(1, 0xffffff);
-                    player2.playerHealthBar.fillRect(0, 0, 100, 10);
-                    player2.playerHealthBar.x = player2.x - 50
-                    player2.playerHealthBar.y = player2.y - 50
                     this.player.push(player2);
+                    this.player.push(player3);
+                    this.player.push(player4);
 
+
+                    // let ennemy1 = this.physics.add.sprite(0, 0, 'player', 6);
+                    // ennemy1.squarePosition = "10-1"
+                    // ennemy1.setPosition(this.squares["10-1"].x, this.squares["10-1"].y);
+                    // ennemy1.hp = 3;
+                    // ennemy1.maxHP = this.ennemy.hp;
+                    // ennemy1.attack = 2;
+                    // ennemy1.defense = 1;
+                    // ennemy1.actionsPerTurn = 2;
+                    // ennemy1.actionsLeft = ennemy1.actionsPerTurn;
+                    // charactersLayer.add([ennemy1])
+
+                    // ennemy1.healthBar = this.add.graphics();
+                    // ennemy1.healthBar.fillStyle(0xe74c3c, 1)
+                    // ennemy1.healthBar.lineStyle(1, 0xffffff);
+                    // ennemy1.healthBar.fillRect(0, 0, 100, 10);
+                    // ennemy1.healthBar.x = ennemy1.x - 50
+                    // ennemy1.healthBar.y = ennemy1.y - 50
                     this.ennemy = []
-
-                    let ennemy1 = this.physics.add.sprite(0, 0, 'player', 6);
-                    ennemy1.squarePosition = "10-1"
-                    ennemy1.setPosition(this.squares["10-1"].x, this.squares["10-1"].y);
-                    ennemy1.hp = 3;
-                    ennemy1.maxHP = this.ennemy.hp;
-                    ennemy1.attack = 2;
-                    ennemy1.defense = 1;
-                    ennemy1.actionsPerTurn = 2;
-                    ennemy1.actionsLeft = ennemy1.actionsPerTurn;
-                    charactersLayer.add([ennemy1])
-
-                    ennemy1.healthBar = this.add.graphics();
-                    ennemy1.healthBar.fillStyle(0xe74c3c, 1)
-                    ennemy1.healthBar.lineStyle(1, 0xffffff);
-                    ennemy1.healthBar.fillRect(0, 0, 100, 10);
-                    ennemy1.healthBar.x = ennemy1.x - 50
-                    ennemy1.healthBar.y = ennemy1.y - 50
+                    let ennemy1 = this.createPlayer("A", 6, "10-1", 5, 2, 1, 2, "ennemy")
+                    let ennemy2 = this.createPlayer("B", 6, "10-2", 5, 2, 1, 2, "ennemy")
+                    let ennemy3 = this.createPlayer("C", 6, "11-1", 5, 2, 1, 2, "ennemy")
+                    let ennemy4 = this.createPlayer("D", 6, "11-2", 5, 2, 1, 2, "ennemy")
+                    charactersLayer.add([ennemy1, ennemy2, ennemy3, ennemy4])
                     this.ennemy.push(ennemy1);
-
-                    let ennemy2 = this.physics.add.sprite(0, 0, 'player', 6);
-                    ennemy2.squarePosition = "9-1"
-                    ennemy2.setPosition(this.squares["9-1"].x, this.squares["9-1"].y);
-                    ennemy2.hp = 3;
-                    ennemy2.maxHP = this.ennemy.hp;
-                    ennemy2.attack = 2;
-                    ennemy2.defense = 1;
-                    ennemy2.actionsPerTurn = 2;
-                    ennemy2.actionsLeft = ennemy1.actionsPerTurn;
-                    charactersLayer.add([ennemy2])
-
-                    ennemy2.healthBar = this.add.graphics();
-                    ennemy2.healthBar.fillStyle(0xe74c3c, 1)
-                    ennemy2.healthBar.lineStyle(1, 0xffffff);
-                    ennemy2.healthBar.fillRect(0, 0, 100, 10);
-                    ennemy2.healthBar.x = ennemy2.x - 50
-                    ennemy2.healthBar.y = ennemy2.y - 50
                     this.ennemy.push(ennemy2);
+                    this.ennemy.push(ennemy3);
+                    this.ennemy.push(ennemy4);
 
                     this.anims.create({
                         key: 'left',
@@ -267,21 +277,39 @@
                             // switch to BattleScene
                     this.scene.switch('BattleScene');
                 },
-
+                timeout: function (ms) {
+                    return new Promise(resolve => setTimeout(resolve, ms));
+                },
+                ennemyTurn: 0,
                 update: async function (time, delta) {
                     this.player.forEach((player) => {
                         if (player.hp <= 0 && player.squarePosition) {
                             player.squarePosition = null
                             player.alpha = 0
+                            player.actionsLeft = 0
+                            player.nameText.destroy()
+                            console.log(`Player ${player.name} Defeated`)
                         }
-                                            // Character Movement Animation Management
+                        if (player.hp <= 0) {
+                            player.actionsLeft = 0
+                        }
+
+                        if (!player.actionsLeft) {
+                            player.tint = 0x808080
+                        } else {
+                            player.tint = 0xffffff
+                        }
+                        // Character Movement Animation Management
                         if (player.inMovement && player.inMovement.is) {
                             if (player.body.speed > 0) {
                                 if (Phaser.Math.Distance.BetweenPoints(player, player.inMovement.destination) < 4) {
                                     player.body.reset(player.inMovement.destination.x, player.inMovement.destination.y);
-                                    player.playerHealthBar.x = player.x-50
-                                    player.playerHealthBar.y = player.y-50
-                                    player.playerHealthBar.alpha = 1
+                                    player.healthBar.x = player.x-50
+                                    player.healthBar.y = player.y-50
+                                    player.healthBar.alpha = 1
+                                    player.nameText.x = player.healthBar.x - 10
+                                    player.nameText.y = player.healthBar.y - 5
+                                    player.nameText.alpha = 1
                                     player.body.speed = 0
                                     player.inMovement = { is: false }
                                 }
@@ -332,6 +360,7 @@
                                                 cameraRef.main.shake(200);
                                                 let damage = player.attack - ennemyTarget.defense
                                                 if (damage >= 0) {
+                                                    console.log(`Player ${player.name} attacks ennemy ${ennemyTarget.name}, ${damage} damage taken`)
                                                     ennemyTarget.hp = ennemyTarget.hp - damage
                                                     ennemyTarget.healthBar.scaleX = ennemyTarget.hp / ennemyTarget.maxHP;
                                                     let damageText = that.add.text(0, 0, `-${damage}`, {fontSize: "32px", color: "#FF0000", fontFamily: "Impact"});
@@ -352,7 +381,8 @@
                                             } else {
                                                 offLocationClickEvent()
                                                 physicsRef.moveToObject(player, squaresRef[location], 500);
-                                                player.playerHealthBar.alpha = 0
+                                                player.nameText.alpha = 0
+                                                player.healthBar.alpha = 0
                                                 player.inMovement = {is: true, destination: squaresRef[location] }
                                                 player.squarePosition = location
                                                 player.movableLocations = []
@@ -375,14 +405,33 @@
 
                     console.log(currentTurn, (playerTurn ? "Player Turn" : "Ennemy Turn"))
 
-                    if (this.player.every( v => v.actionsLeft == 0)) {
+                    if (this.player.every( v => v.actionsLeft == 0) && !winner) {
                         playerTurn = false;
                     }
-
-                    this.ennemy.forEach((ennemy) => {
+                    
+                    await Promise.all(this.ennemy.map(async (ennemy, index) => {
                         if (ennemy.hp <= 0 && ennemy.squarePosition) {
                             ennemy.squarePosition = null
                             ennemy.alpha = 0
+                            ennemy.actionsLeft = 0
+                            ennemy.nameText.destroy()
+                            player.forEach(player => player.actionsLeft = 0)
+                            console.log(`Ennemy ${ennemy.name} defeated`)
+                        }
+                        if (this.ennemyTurn == index && ennemy.hp <= 0) {
+                            ennemy.actionsLeft = 0
+                            this.ennemyTurn++
+                        }
+
+                        if (this.ennemyTurn == index && !ennemy.actionsLeft) {
+                            ennemy.tint = 0x808080
+                            this.ennemyTurn++
+                        } else {
+                            ennemy.tint = 0xffffff
+                        }
+
+                        if (this.ennemyTurn > this.ennemy.length) {
+                           this.ennemyTurn = 0
                         }
                                             // Character Movement Animation Management
                         if (ennemy.inMovement && ennemy.inMovement.is) {
@@ -393,14 +442,20 @@
                                         ennemy.healthBar.x = ennemy.x - 50
                                         ennemy.healthBar.y = ennemy.y - 50
                                         ennemy.healthBar.alpha = 1
+                                        ennemy.nameText.x = ennemy.healthBar.x - 10
+                                        ennemy.nameText.y = ennemy.healthBar.y - 5
+                                        ennemy.nameText.alpha = 1
                                     }
                                     ennemy.body.speed = 0
+                                    console.log("waiting for ennemy " + ennemy.name)
+                                    await this.timeout(1000)
+                                    console.log("done waiting ennemy" + ennemy.name)
                                     ennemy.inMovement = { is: false }
+
                                 }
                             }
                         }
-
-                        if (!playerTurn && ennemy.hp > 0 && (!ennemy.inMovement || (ennemy.inMovement && !ennemy.inMovement.is))) {
+                        if (!winner && !playerTurn && this.ennemyTurn == index && ennemy.hp > 0 && ennemy.actionsLeft > 0 && (!ennemy.inMovement || (ennemy.inMovement && !ennemy.inMovement.is))) {
                             ennemy.moveMode = true
                             ennemy.movableLocations = [];
                             let movableLocationsRef = ennemy.movableLocations
@@ -417,28 +472,39 @@
                                     if (!(i == 0 && u == 0)) {
                                         // parameters are x, y, width, height
                                         const locationToPush = `${parseInt(ennemy.squarePosition.split('-')[0]) + i}-${parseInt(ennemy.squarePosition.split('-')[1]) + u}`
-                                        if (!obstaclesLocationRef.includes(locationToPush) && !playerRef.find((element) => element.squarePosition == locationToPush)) {
-                                            movableLocationsRef.push(locationToPush)
-                                        }
+                                        ennemyRef.forEach((ennemyLocation) => {
+
+                                            if (locationToPush !== ennemyLocation.squarePosition && !obstaclesLocationRef.includes(locationToPush)) {
+                                                if (locationToPush == ennemyLocation.squarePosition) {
+                                                    console.log(ennemyLocation.squarePosition, locationToPush, "and yet it get pushed")
+                                                }
+                                                movableLocationsRef.push(locationToPush)
+                                            }
+                                        })
                                     }
 
                                 }
                             }
                             let selectedLocation;
-                            if (playerRef.every(i => movableLocationsRef.includes(i.squarePosition))) {
-                                playerRef.every(i => movableLocationsRef.includes(i.squarePosition) ? selectedLocation = i.squarePosition : null)
-                            } else {
+                            playerRef.forEach((i) => {
+                                if (movableLocationsRef.includes(i.squarePosition)) {
+                                    selectedLocation = i.squarePosition
+                                }
+                            })
+                            if (!selectedLocation) {
                                 selectedLocation = movableLocationsRef[Math.floor(Math.random() * movableLocationsRef.length)];
                             }
 
                             if (ennemy.moveMode) {
                                 let playerTarget = playerRef.find((element) => element.squarePosition == selectedLocation)
+                                console.log(playerTarget)
                                 if (playerTarget) {
                                     cameraRef.main.shake(200);
                                     let damage = ennemy.attack - playerTarget.defense
                                     if (damage >= 0) {
+                                        console.log(`Ennemy ${ennemy.name} attacks player ${playerTarget.name}, ${damage} damage taken`)
                                         playerTarget.hp = playerTarget.hp - damage
-                                        playerTarget.playerHealthBar.scaleX = playerTarget.hp / playerTarget.maxHP;
+                                        playerTarget.healthBar.scaleX = playerTarget.hp / playerTarget.maxHP;
                                         let damageText = that.add.text(0, 0, `-${damage}`, { fontSize: "32px", color: "#FF0000", fontFamily: "Impact" });
                                         damageText.alpha = 1
                                         damageText.setPosition(playerTarget.x + 50, playerTarget.y - 50);
@@ -454,30 +520,32 @@
                                     ennemy.moveMode = false;
                                     ennemy.alpha = 1;
                                     ennemy.actionDone = true
-                                    console.log("action", ennemy.actionsLeft, "player hp", playerTarget.hp)
                                 } else {
-                                    physicsRef.moveToObject(ennemy, squaresRef[selectedLocation], 500);
-                                    ennemy.inMovement = { is: true, destination: squaresRef[selectedLocation] }
-                                    ennemy.squarePosition = selectedLocation
-                                    ennemy.movableLocations = []
-                                    ennemy.moveMode = false;
-                                    ennemy.alpha = 1;
-                                    ennemy.movementDone = true;
+                                    if (squaresRef[selectedLocation]) {
+                                        physicsRef.moveToObject(ennemy, squaresRef[selectedLocation], 500);
+                                        ennemy.inMovement = { is: true, destination: squaresRef[selectedLocation] }
+                                        ennemy.squarePosition = selectedLocation
+                                        ennemy.movableLocations = []
+                                        ennemy.moveMode = false;
+                                        ennemy.alpha = 1;
+                                        ennemy.movementDone = true;
+                                    }
                                 }
                                 ennemy.actionsLeft--
                             }
                         }
-                    })
+                    }))
 
                     if (this.ennemy.every( v => v.squarePosition == null)) {
                         winner = "Player"
                     }
 
-                    if (this.ennemy.every( v => v.actionsLeft == 0)) {
+                    if (this.ennemy.every( v => v.actionsLeft <= 0) && !winner) {
                         currentTurn++;
+                        this.ennemyTurn = 0
                         playerTurn = true;
-                        this.player.forEach((player) => {player.actionsLeft = player.actionsPerTurn});
-                        this.ennemy.forEach((ennemy) => {ennemy.actionsLeft = ennemy.actionsPerTurn});
+                        this.player.forEach((player) => { player.actionsLeft = player.actionsPerTurn });
+                        this.ennemy.forEach((ennemy) => { ennemy.actionsLeft = ennemy.actionsPerTurn });
                     }
 
 
