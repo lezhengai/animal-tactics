@@ -281,6 +281,8 @@
                     return new Promise(resolve => setTimeout(resolve, ms));
                 },
                 ennemyTurn: 0,
+                ennemiesAttacking: false,
+                ennemiesMoving: false,
                 update: async function (time, delta) {
                     this.player.forEach((player) => {
                         if (player.hp <= 0 && player.squarePosition) {
@@ -289,6 +291,7 @@
                             player.actionsLeft = 0
                             player.nameText.destroy()
                             console.log(`Player ${player.name} Defeated`)
+                            document.getElementById("logs").innerHTML += `<p>Player ${player.name} Defeated</p><br>`
                         }
                         if (player.hp <= 0) {
                             player.actionsLeft = 0
@@ -351,7 +354,7 @@
                             movableLocationsRef.forEach(location => {
                                 if (squaresRef[location]) {
                                     squaresRef[location].alpha = 1
-                                    squaresRef[location].on('pointerdown', function (pointer) {
+                                    squaresRef[location].on('pointerdown', async function (pointer) {
                                         if (player.moveMode) {
                                             console.log(player.squarePosition, location)
                                             let ennemyTarget = ennemyRef.find((i) => i.squarePosition == location)
@@ -360,6 +363,9 @@
                                                 cameraRef.main.shake(200);
                                                 let damage = player.attack - ennemyTarget.defense
                                                 if (damage >= 0) {
+                                                    player.y -= 20
+                                                    ennemyTarget.y -= 20
+                                                    document.getElementById("logs").innerHTML += `<p>Player ${player.name} attacks ennemy ${ennemyTarget.name}, ${damage} damage taken</p><br>`
                                                     console.log(`Player ${player.name} attacks ennemy ${ennemyTarget.name}, ${damage} damage taken`)
                                                     ennemyTarget.hp = ennemyTarget.hp - damage
                                                     ennemyTarget.healthBar.scaleX = ennemyTarget.hp / ennemyTarget.maxHP;
@@ -373,6 +379,9 @@
                                                         duration: 3000,
                                                         ease: 'Power2'
                                                     }, that);
+                                                    await that.timeout(1000)
+                                                    player.y += 20
+                                                    ennemyTarget.y += 20
                                                 }
                                                 player.movableLocations = []
                                                 player.moveMode = false;
@@ -415,8 +424,10 @@
                             ennemy.alpha = 0
                             ennemy.actionsLeft = 0
                             ennemy.nameText.destroy()
-                            player.forEach(player => player.actionsLeft = 0)
+                            // player.forEach(player => player.actionsLeft = 0)
                             console.log(`Ennemy ${ennemy.name} defeated`)
+                            document.getElementById("logs").innerHTML += `<p>Ennemy ${ennemy.name} defeated</p><br>`
+
                         }
                         if (this.ennemyTurn == index && ennemy.hp <= 0) {
                             ennemy.actionsLeft = 0
@@ -450,12 +461,13 @@
                                     console.log("waiting for ennemy " + ennemy.name)
                                     await this.timeout(1000)
                                     console.log("done waiting ennemy" + ennemy.name)
+                                    this.ennemiesMoving = false
                                     ennemy.inMovement = { is: false }
 
                                 }
                             }
                         }
-                        if (!winner && !playerTurn && this.ennemyTurn == index && ennemy.hp > 0 && ennemy.actionsLeft > 0 && (!ennemy.inMovement || (ennemy.inMovement && !ennemy.inMovement.is))) {
+                        if (!winner && !playerTurn && this.ennemyTurn == index && ennemy.hp > 0 && ennemy.actionsLeft > 0 && (!ennemy.inMovement || (ennemy.inMovement && !ennemy.inMovement.is)) && !this.ennemiesAttacking && !this.ennemiesMoving) {
                             ennemy.moveMode = true
                             ennemy.movableLocations = [];
                             let movableLocationsRef = ennemy.movableLocations
@@ -466,6 +478,7 @@
                             let physicsRef = this.physics
                             let cameraRef = this.cameras
                             let tweensRef = this.tweens
+                            let timeout = this.timeout
                             let that = this;
                             for (let i of [-2, -1, 0, 1, 2]) {
                                 for (let u of [-1, 0, 1]) {
@@ -502,6 +515,10 @@
                                     cameraRef.main.shake(200);
                                     let damage = ennemy.attack - playerTarget.defense
                                     if (damage >= 0) {
+                                        that.ennemiesAttacking = true
+                                        ennemy.y -= 20
+                                        playerTarget.y -= 20
+                                        document.getElementById("logs").innerHTML += `<p>Ennemy ${ennemy.name} attacks player ${playerTarget.name}, ${damage} damage taken</p><br>`
                                         console.log(`Ennemy ${ennemy.name} attacks player ${playerTarget.name}, ${damage} damage taken`)
                                         playerTarget.hp = playerTarget.hp - damage
                                         playerTarget.healthBar.scaleX = playerTarget.hp / playerTarget.maxHP;
@@ -515,6 +532,10 @@
                                             duration: 1000,
                                             ease: 'Power2'
                                         }, that);
+                                        await that.timeout(1000)
+                                        ennemy.y += 20
+                                        playerTarget.y += 20
+                                        that.ennemiesAttacking = false
                                     }
                                     ennemy.movableLocations = []
                                     ennemy.moveMode = false;
@@ -523,6 +544,7 @@
                                 } else {
                                     if (squaresRef[selectedLocation]) {
                                         physicsRef.moveToObject(ennemy, squaresRef[selectedLocation], 500);
+                                        this.ennemiesMoving = true
                                         ennemy.inMovement = { is: true, destination: squaresRef[selectedLocation] }
                                         ennemy.squarePosition = selectedLocation
                                         ennemy.movableLocations = []
@@ -604,7 +626,41 @@
 
             const game = new Phaser.Game(config);
         </script>
-
+        <div id="logs"></div>
     </body>
 
 </html>
+<style>
+    body {
+        display: flex;
+        flex-direction: row;
+    }
+    div#logs {
+        border: 1px solid grey; 
+        border-radius: 15px;
+        padding: 30px;
+        margin: 15px;
+        width: 20vw;
+        height: 700px;
+        overflow-y: ;
+        line-height: 0px;
+        overflow-y: scroll;
+        //Scrollbar style for Firefox
+        scrollbar-color: rgb(var(--v-theme-primary)) rgb(var(--v-theme-background));
+        scrollbar-width: thin;
+        }
+
+        //Scrollbar style for webkit browsers
+        #aveine-invoice-list::-webkit-scrollbar {
+        width: 8px;
+        }
+        #aveine-invoice-list::-webkit-scrollbar-track {
+        margin: 20px;
+        background: grey;
+        border-radius: 10px;
+        }
+        #aveine-invoice-list::-webkit-scrollbar-thumb {
+        background: blueviolet;
+        border-radius: 10px;
+        } 
+</style>
