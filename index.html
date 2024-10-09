@@ -108,6 +108,8 @@
                     player.defense = defense;
                     player.actionsPerTurn = actionsPerTurn;
                     player.actionsLeft = player.actionsPerTurn;
+                    player.hasMoved = false;
+                    player.doneAction = false;
 
                     player.healthBar = this.add.graphics();
                     player.healthBar.fillStyle(0xe74c3c, 1)
@@ -116,6 +118,16 @@
                     player.healthBar.x = player.x - 50
                     player.healthBar.y = player.y - 50
                     player.nameText = this.add.text(player.healthBar.x-20, player.healthBar.y-5, player.name, { fontSize: "16px", color: "#FFFFFF", fontFamily: "Impact" });
+                    const animationKey = Math.floor(Math.random() * 9999);
+                    this.anims.create({
+                        key: animationKey.toString(),
+                        frames: this.anims.generateFrameNumbers('player', { frames: [sprite-6, sprite, sprite-6, sprite] }),
+                        frameRate: 2,
+                        repeat: -1
+                    });
+
+                    player.anims.play(animationKey.toString(), true);
+
                     return player
                 },
 
@@ -147,25 +159,8 @@
                     this.obstaclesLocation = ["0-0", "1-0", "2-0", "3-0", "0-1" , "0-2", "4-2", "5-2", "6-2", "7-2", "4-3", "5-3", "6-3", "7-3", "4-4", "5-4", "6-4", "7-4", "11-4", "11-5", "11-6", "10-6", "9-6", "8-6"]
                     
                     this.player = []
-                    // Player 1
-                    // let player1 = this.physics.add.sprite(0, 0, 'player', 15)
-                    // player1.squarePosition = "1-5"
-                    // player1.setInteractive();
-                    // player1.setPosition(this.squares["1-5"].x, this.squares["1-5"].y);
-                    // player1.hp = 5;
-                    // player1.maxHP = player1.hp;
-                    // player1.attack = 2;
-                    // player1.defense = 1;
-                    // player1.actionsPerTurn = 2;
-                    // player1.actionsLeft = player1.actionsPerTurn;
-                    // charactersLayer.add([player1])
                     
-                    // player1.playerHealthBar = this.add.graphics();
-                    // player1.playerHealthBar.fillStyle(0xe74c3c, 1)
-                    // player1.playerHealthBar.lineStyle(1, 0xffffff);
-                    // player1.playerHealthBar.fillRect(0, 0, 100, 10);
-                    // player1.playerHealthBar.x = player1.x - 50
-                    // player1.playerHealthBar.y = player1.y - 50
+                    
                     let player1 = this.createPlayer("A", 15, "1-5", 5, 2, 1, 2, "player")
                     let player2 = this.createPlayer("B", 15, "1-6", 5, 2, 1, 2, "player")
                     let player3 = this.createPlayer("C", 15, "2-5", 5, 2, 1, 2, "player")
@@ -176,23 +171,6 @@
                     this.player.push(player3);
                     this.player.push(player4);
 
-
-                    // let ennemy1 = this.physics.add.sprite(0, 0, 'player', 6);
-                    // ennemy1.squarePosition = "10-1"
-                    // ennemy1.setPosition(this.squares["10-1"].x, this.squares["10-1"].y);
-                    // ennemy1.hp = 3;
-                    // ennemy1.maxHP = this.ennemy.hp;
-                    // ennemy1.attack = 2;
-                    // ennemy1.defense = 1;
-                    // ennemy1.actionsPerTurn = 2;
-                    // ennemy1.actionsLeft = ennemy1.actionsPerTurn;
-                    // charactersLayer.add([ennemy1])
-
-                    // ennemy1.healthBar = this.add.graphics();
-                    // ennemy1.healthBar.fillStyle(0xe74c3c, 1)
-                    // ennemy1.healthBar.lineStyle(1, 0xffffff);
-                    // ennemy1.healthBar.fillRect(0, 0, 100, 10);
-                    // ennemy1.healthBar.x = ennemy1.x - 50
                     // ennemy1.healthBar.y = ennemy1.y - 50
                     this.ennemy = []
                     let ennemy1 = this.createPlayer("A", 6, "10-1", 5, 2, 1, 2, "ennemy")
@@ -205,39 +183,6 @@
                     this.ennemy.push(ennemy3);
                     this.ennemy.push(ennemy4);
 
-                    this.anims.create({
-                        key: 'left',
-                        frames: this.anims.generateFrameNumbers('player', { frames: [1, 7, 1, 13] }),
-                        frameRate: 10,
-                        repeat: -1
-                    });
-
-                    this.anims.create({
-                        key: 'right',
-                        frames: this.anims.generateFrameNumbers('player', { frames: [1, 7, 1, 13] }),
-                        frameRate: 10,
-                        repeat: -1
-                    });
-                    this.anims.create({
-                        key: 'up',
-                        frames: this.anims.generateFrameNumbers('player', { frames: [2, 8, 2, 14] }),
-                        frameRate: 10,
-                        repeat: -1
-                    });
-                    this.anims.create({
-                        key: 'down',
-                        frames: this.anims.generateFrameNumbers('player', { frames: [0, 6, 0, 12] }),
-                        frameRate: 10,
-                        repeat: -1
-                    });
-
-                    this.cursors = this.input.keyboard.createCursorKeys();
-
-
-
-                    // this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
-                    // this.cameras.main.startFollow(this.player);
-                    // this.cameras.main.roundPixels = true;
 
 
                     let squaresRef = this.squares
@@ -254,28 +199,22 @@
                                             squaresRef[location].off('pointerdown')
                                         }
                                     });
+                                    player.attackableLocations.forEach(location => {
+                                        if (squaresRef[location]) {
+                                            squaresRef[location].alpha = 0.1
+                                            squaresRef[location].off('pointerdown')
+                                        }
+                                    });
                                     player.movableLocations = []
+                                    player.attackableLocations = []
+                                    player.actionUI.destroy()
+                                    player.actionUIText.destroy()
                                     player.moveMode = false;
                                     player.alpha = 1;
                                 }
                             }
                         })
                     })
-
-
-    //              this.physics.add.overlap(this.player, this.spawns, this.onMeetEnemy, false, this);
-                },
-                movableLocations: null,
-
-                onMeetEnemy: function (player, zone) {
-                    // we move the zone to some other location
-                    zone.x = Phaser.Math.RND.between(0, this.physics.world.bounds.width);
-                    zone.y = Phaser.Math.RND.between(0, this.physics.world.bounds.height);
-                    // start battle 
-                    this.cameras.main.shake(300);
-
-                            // switch to BattleScene
-                    this.scene.switch('BattleScene');
                 },
                 timeout: function (ms) {
                     return new Promise(resolve => setTimeout(resolve, ms));
@@ -283,6 +222,8 @@
                 ennemyTurn: 0,
                 ennemiesAttacking: false,
                 ennemiesMoving: false,
+
+
                 update: async function (time, delta) {
                     this.player.forEach((player) => {
                         if (player.hp <= 0 && player.squarePosition) {
@@ -290,7 +231,6 @@
                             player.alpha = 0
                             player.actionsLeft = 0
                             player.nameText.destroy()
-                            console.log(`Player ${player.name} Defeated`)
                             document.getElementById("logs").innerHTML += `<p>Player ${player.name} Defeated</p><br>`
                         }
                         if (player.hp <= 0) {
@@ -320,21 +260,55 @@
                         }
 
                         if (player.moveMode && (!player.movableLocations || (player.movableLocations && player.movableLocations.length == 0))) {
-                            player.movableLocations  = [];
-                            let movableLocationsRef = player.movableLocations 
-                            let ennemyRef = this.ennemy
-                            let squaresRef = this.squares
-                            let obstaclesLocationRef = this.obstaclesLocation
-                            let physicsRef = this.physics
-                            let cameraRef = this.cameras
-                            let tweensRef = this.tweens
                             let that = this;
+                            player.movableLocations  = [];
+                            player.actionUI = this.add.graphics();
+                            player.actionUI.lineStyle(1, 0xffffff);
+                            player.actionUI.fillStyle("#000000")
+                            player.actionUI.fillRect(100, 50, 100, 60);
+                            player.actionUIText = this.add.text(110, 60, `Player ${player.name} \n Wait`, { fontSize: "18px", color: "#FFFFFF", fontFamily: "Impact" });
+                            player.actionUIText.setInteractive();
+
+                            player.actionUIText.on('pointerdown', function (pointer) { 
+                                player.attackableLocations.forEach(location => {
+                                    if (that.squares[location]) {
+                                        that.squares[location].alpha = 0.1
+                                        that.squares[location].off('pointerdown')
+                                    }
+                                });
+                                player.movableLocations.forEach(location => {
+                                    if (that.squares[location]) {
+                                        that.squares[location].alpha = 0.1
+                                        that.squares[location].off('pointerdown')
+                                    }
+                                });
+                                player.attackableLocations = []
+                                player.movableLocations = []
+                                player.actionUI.destroy()
+                                player.actionUIText.destroy()
+                                player.alpha = 1;
+                                player.movementDone = true;
+                                player.doneAction = true;
+                                player.actionsLeft = 0 
+                                player.moveMode = false;
+
+                            })
+
+                            let movableLocationsRef = player.movableLocations 
+                            player.attackableLocations = [`${parseInt(player.squarePosition.split('-')[0]) + 1}-${parseInt(player.squarePosition.split('-')[1])}`,
+                                                          `${parseInt(player.squarePosition.split('-')[0]) - 1}-${parseInt(player.squarePosition.split('-')[1])}`,
+                                                          `${parseInt(player.squarePosition.split('-')[0])}-${parseInt(player.squarePosition.split('-')[1]) + 1}`,
+                                                          `${parseInt(player.squarePosition.split('-')[0])}-${parseInt(player.squarePosition.split('-')[1]) - 1}`,
+                                                            ]
+
                             for (let i of [-2,-1,0,1,2]) {
-                                for (let u of [-1,0,1]) {
+                                for (let u of [-2,-1,0,1,-2]) {
                                     if (!(i == 0 && u == 0)) {
                                         // parameters are x, y, width, height
                                         const locationToPush = `${parseInt(player.squarePosition.split('-')[0]) + i}-${parseInt(player.squarePosition.split('-')[1]) + u}`
-                                        if (!obstaclesLocationRef.includes(locationToPush)){
+                                        let playerIsinThere = false
+                                        that.player.forEach((player) => { if (locationToPush == player.squarePosition) {playerIsinThere = true}})
+                                        if (!that.obstaclesLocation.includes(locationToPush) && !playerIsinThere){
                                             movableLocationsRef.push(locationToPush)
                                         }
                                     }
@@ -344,67 +318,111 @@
 
                             function offLocationClickEvent() {
                                 movableLocationsRef.forEach(location => {
-                                    if (squaresRef[location]) {
-                                        squaresRef[location].alpha = 0.1
-                                        squaresRef[location].off('pointerdown')
+                                    if (that.squares[location]) {
+                                        that.squares[location].alpha = 0.1
+                                        that.squares[location].off('pointerdown')
+                                    }
+                                });
+                                player.attackableLocations.forEach(location => {
+                                    if (that.squares[location]) {
+                                        that.squares[location].alpha = 0.1
+                                        that.squares[location].off('pointerdown')
                                     }
                                 });
                             }
                             
-                            movableLocationsRef.forEach(location => {
-                                if (squaresRef[location]) {
-                                    squaresRef[location].alpha = 1
-                                    squaresRef[location].on('pointerdown', async function (pointer) {
-                                        if (player.moveMode) {
-                                            console.log(player.squarePosition, location)
-                                            let ennemyTarget = ennemyRef.find((i) => i.squarePosition == location)
-                                            if (ennemyTarget) {
-                                                offLocationClickEvent()
-                                                cameraRef.main.shake(200);
-                                                let damage = player.attack - ennemyTarget.defense
-                                                if (damage >= 0) {
-                                                    player.y -= 20
-                                                    ennemyTarget.y -= 20
-                                                    document.getElementById("logs").innerHTML += `<p>Player ${player.name} attacks ennemy ${ennemyTarget.name}, ${damage} damage taken</p><br>`
-                                                    console.log(`Player ${player.name} attacks ennemy ${ennemyTarget.name}, ${damage} damage taken`)
-                                                    ennemyTarget.hp = ennemyTarget.hp - damage
-                                                    ennemyTarget.healthBar.scaleX = ennemyTarget.hp / ennemyTarget.maxHP;
-                                                    let damageText = that.add.text(0, 0, `-${damage}`, {fontSize: "32px", color: "#FF0000", fontFamily: "Impact"});
-                                                    damageText.alpha = 1
-                                                    damageText.setPosition(ennemyTarget.x+50, ennemyTarget.y-50);
-                                                    tweensRef.add({
-                                                        targets: damageText,
-                                                        alpha: 0,
-                                                        y: damageText.y-50,
-                                                        duration: 3000,
-                                                        ease: 'Power2'
-                                                    }, that);
-                                                    await that.timeout(1000)
-                                                    player.y += 20
-                                                    ennemyTarget.y += 20
+                            if (!player.hasMoved) {
+                                movableLocationsRef.forEach(location => {
+                                    if (that.squares[location]) {
+                                        that.squares[location].alpha = 1
+                                        that.squares[location].on('pointerdown', async function (pointer) {
+                                            if (player.moveMode) {
+                                                let ennemyTarget = that.ennemy.find((i) => i.squarePosition == location)
+                                                if (ennemyTarget) {
+
+                                                } else {
+                                                    offLocationClickEvent()
+                                                    that.physics.moveToObject(player, that.squares[location], 500);
+                                                    player.nameText.alpha = 0
+                                                    player.healthBar.alpha = 0
+                                                    player.inMovement = { is: true, destination: that.squares[location] }
+                                                    player.squarePosition = location
+                                                    player.movableLocations = []
+                                                    player.actionUI.destroy()
+                                                    player.actionUIText.destroy()
+                                                    player.alpha = 1;
+                                                    player.movementDone = true;
+                                                    player.moveMode = false;
+                                                    player.actionsLeft--
+                                                    player.hasMoved = true
+                                                    that.timeout(1000)
+                                                    if (!player.doneAction) {
+                                                        that.timeout(1000)
+                                                        player.moveMode = true;
+                                                    } else {
+                                                        player.moveMode = false;
+                                                    }
                                                 }
-                                                player.movableLocations = []
-                                                player.moveMode = false;
-                                                player.alpha = 1;
-                                                player.actionDone = true
-                                            } else {
-                                                offLocationClickEvent()
-                                                physicsRef.moveToObject(player, squaresRef[location], 500);
-                                                player.nameText.alpha = 0
-                                                player.healthBar.alpha = 0
-                                                player.inMovement = {is: true, destination: squaresRef[location] }
-                                                player.squarePosition = location
-                                                player.movableLocations = []
-                                                player.moveMode = false;
-                                                player.alpha = 1;
-                                                player.movementDone = true;
                                             }
-                                            player.actionsLeft--
-                                        }
-                                    })
-                                }
-                                
-                            });
+                                        })
+                                    }
+
+                                });
+                            }
+                            if (!player.doneAction) {
+                                player.attackableLocations.forEach(location => {
+                                    if (that.squares[location]) {
+                                        that.squares[location].alpha = 1
+                                        that.squares[location].on('pointerdown', async function (pointer) {
+                                            if (player.moveMode) {
+                                                let ennemyTarget = that.ennemy.find((i) => i.squarePosition == location)
+                                                if (ennemyTarget) {
+                                                    offLocationClickEvent()
+                                                    that.cameras.main.shake(200);
+                                                    let damage = player.attack - ennemyTarget.defense
+                                                    if (damage >= 0) {
+                                                        player.y -= 20
+                                                        ennemyTarget.y -= 20
+                                                        document.getElementById("logs").innerHTML += `<p>Player ${player.name} attacks ennemy ${ennemyTarget.name}, ${damage} damage taken</p><br>`
+                                                        ennemyTarget.hp = ennemyTarget.hp - damage
+                                                        ennemyTarget.healthBar.scaleX = ennemyTarget.hp / ennemyTarget.maxHP;
+                                                        let damageText = that.add.text(0, 0, `-${damage}`, { fontSize: "32px", color: "#FF0000", fontFamily: "Impact" });
+                                                        damageText.alpha = 1
+                                                        damageText.setPosition(ennemyTarget.x + 50, ennemyTarget.y - 50);
+                                                        that.tweens.add({
+                                                            targets: damageText,
+                                                            alpha: 0,
+                                                            y: damageText.y - 50,
+                                                            duration: 3000,
+                                                            ease: 'Power2'
+                                                        }, that);
+                                                        await that.timeout(1000)
+                                                        player.y += 20
+                                                        ennemyTarget.y += 20
+                                                    }
+                                                    player.movableLocations = []
+                                                    player.actionUI.destroy()
+                                                    player.actionUIText.destroy()
+                                                    player.alpha = 1;
+                                                    player.actionDone = true
+                                                    player.moveMode = false;
+                                                    player.actionsLeft--
+                                                    player.doneAction = true
+
+                                                    if (!player.hasMoved) {
+                                                        that.timeout(1000)
+                                                        player.moveMode = true;
+                                                    } else {
+                                                        player.moveMode = false;
+                                                    }
+                                                }
+
+                                            }
+                                        })
+                                    }
+
+                                });
+                            }
                         }
                     })
 
@@ -412,7 +430,6 @@
                         winner = "Ennemy"
                     }
 
-                    console.log(currentTurn, (playerTurn ? "Player Turn" : "Ennemy Turn"))
 
                     if (this.player.every( v => v.actionsLeft == 0) && !winner) {
                         playerTurn = false;
@@ -424,8 +441,6 @@
                             ennemy.alpha = 0
                             ennemy.actionsLeft = 0
                             ennemy.nameText.destroy()
-                            // player.forEach(player => player.actionsLeft = 0)
-                            console.log(`Ennemy ${ennemy.name} defeated`)
                             document.getElementById("logs").innerHTML += `<p>Ennemy ${ennemy.name} defeated</p><br>`
 
                         }
@@ -458,9 +473,7 @@
                                         ennemy.nameText.alpha = 1
                                     }
                                     ennemy.body.speed = 0
-                                    console.log("waiting for ennemy " + ennemy.name)
                                     await this.timeout(1000)
-                                    console.log("done waiting ennemy" + ennemy.name)
                                     this.ennemiesMoving = false
                                     ennemy.inMovement = { is: false }
 
@@ -471,23 +484,19 @@
                             ennemy.moveMode = true
                             ennemy.movableLocations = [];
                             let movableLocationsRef = ennemy.movableLocations
-                            let playerRef = this.player
-                            let ennemyRef = this.ennemy
-                            let squaresRef = this.squares
-                            let obstaclesLocationRef = this.obstaclesLocation
-                            let physicsRef = this.physics
-                            let cameraRef = this.cameras
-                            let tweensRef = this.tweens
-                            let timeout = this.timeout
+                            ennemy.attackableLocations = [`${parseInt(ennemy.squarePosition.split('-')[0]) + 1}-${parseInt(ennemy.squarePosition.split('-')[1])}`,
+                                                          `${parseInt(ennemy.squarePosition.split('-')[0]) - 1}-${parseInt(ennemy.squarePosition.split('-')[1])}`,
+                                                          `${parseInt(ennemy.squarePosition.split('-')[0])}-${parseInt(ennemy.squarePosition.split('-')[1]) + 1}`,
+                                                          `${parseInt(ennemy.squarePosition.split('-')[0])}-${parseInt(ennemy.squarePosition.split('-')[1]) - 1}` ]
                             let that = this;
                             for (let i of [-2, -1, 0, 1, 2]) {
-                                for (let u of [-1, 0, 1]) {
+                                for (let u of [-2, -1, 0, 1,-2]) {
                                     if (!(i == 0 && u == 0)) {
                                         // parameters are x, y, width, height
                                         const locationToPush = `${parseInt(ennemy.squarePosition.split('-')[0]) + i}-${parseInt(ennemy.squarePosition.split('-')[1]) + u}`
-                                        ennemyRef.forEach((ennemyLocation) => {
+                                        that.ennemy.forEach((ennemyLocation) => {
 
-                                            if (locationToPush !== ennemyLocation.squarePosition && !obstaclesLocationRef.includes(locationToPush)) {
+                                            if (locationToPush !== ennemyLocation.squarePosition && !that.obstaclesLocation.includes(locationToPush)) {
                                                 if (locationToPush == ennemyLocation.squarePosition) {
                                                     console.log(ennemyLocation.squarePosition, locationToPush, "and yet it get pushed")
                                                 }
@@ -499,8 +508,8 @@
                                 }
                             }
                             let selectedLocation;
-                            playerRef.forEach((i) => {
-                                if (movableLocationsRef.includes(i.squarePosition)) {
+                            that.player.forEach((i) => {
+                                if (ennemy.attackableLocations.includes(i.squarePosition)) {
                                     selectedLocation = i.squarePosition
                                 }
                             })
@@ -509,23 +518,21 @@
                             }
 
                             if (ennemy.moveMode) {
-                                let playerTarget = playerRef.find((element) => element.squarePosition == selectedLocation)
-                                console.log(playerTarget)
-                                if (playerTarget) {
-                                    cameraRef.main.shake(200);
+                                let playerTarget = that.player.find((element) => element.squarePosition == selectedLocation)
+                                if (playerTarget && !ennemy.doneAction) {
+                                    that.cameras.main.shake(200);
                                     let damage = ennemy.attack - playerTarget.defense
                                     if (damage >= 0) {
                                         that.ennemiesAttacking = true
                                         ennemy.y -= 20
                                         playerTarget.y -= 20
                                         document.getElementById("logs").innerHTML += `<p>Ennemy ${ennemy.name} attacks player ${playerTarget.name}, ${damage} damage taken</p><br>`
-                                        console.log(`Ennemy ${ennemy.name} attacks player ${playerTarget.name}, ${damage} damage taken`)
                                         playerTarget.hp = playerTarget.hp - damage
                                         playerTarget.healthBar.scaleX = playerTarget.hp / playerTarget.maxHP;
                                         let damageText = that.add.text(0, 0, `-${damage}`, { fontSize: "32px", color: "#FF0000", fontFamily: "Impact" });
                                         damageText.alpha = 1
                                         damageText.setPosition(playerTarget.x + 50, playerTarget.y - 50);
-                                        tweensRef.add({
+                                        that.tweens.add({
                                             targets: damageText,
                                             alpha: 0,
                                             y: damageText.y - 100,
@@ -540,17 +547,17 @@
                                     ennemy.movableLocations = []
                                     ennemy.moveMode = false;
                                     ennemy.alpha = 1;
-                                    ennemy.actionDone = true
-                                } else {
-                                    if (squaresRef[selectedLocation]) {
-                                        physicsRef.moveToObject(ennemy, squaresRef[selectedLocation], 500);
+                                    ennemy.doneAction = true
+                                } else if (!ennemy.hasMoved) {
+                                    if (that.squares[selectedLocation]) {
+                                        that.physics.moveToObject(ennemy, that.squares[selectedLocation], 500);
                                         this.ennemiesMoving = true
-                                        ennemy.inMovement = { is: true, destination: squaresRef[selectedLocation] }
+                                        ennemy.inMovement = { is: true, destination: that.squares[selectedLocation] }
                                         ennemy.squarePosition = selectedLocation
                                         ennemy.movableLocations = []
                                         ennemy.moveMode = false;
                                         ennemy.alpha = 1;
-                                        ennemy.movementDone = true;
+                                        ennemy.hasMoved = true;
                                     }
                                 }
                                 ennemy.actionsLeft--
@@ -566,41 +573,9 @@
                         currentTurn++;
                         this.ennemyTurn = 0
                         playerTurn = true;
-                        this.player.forEach((player) => { player.actionsLeft = player.actionsPerTurn });
-                        this.ennemy.forEach((ennemy) => { ennemy.actionsLeft = ennemy.actionsPerTurn });
+                        this.player.forEach((player) => { player.actionsLeft = player.actionsPerTurn; player.hasMoved = false; player.doneAction = false; });
+                        this.ennemy.forEach((ennemy) => { ennemy.actionsLeft = ennemy.actionsPerTurn; ennemy.hasMoved = false; ennemy.doneAction = false; });
                     }
-
-
-                    // // Horizontal movement
-                    // if (this.cursors.left.isDown) {
-                    //     this.player.body.setVelocityX(-80);
-                    // }
-                    // else if (this.cursors.right.isDown) {
-                    //     this.player.body.setVelocityX(80);
-                    // }
-                    // // Vertical movement
-                    // if (this.cursors.up.isDown) {
-                    //     this.player.body.setVelocityY(-80);
-                    // }
-                    // else if (this.cursors.down.isDown) {
-                    //     this.player.body.setVelocityY(80);
-                    // }    
-
-                    // if (this.cursors.left.isDown) {
-                    //     this.player.anims.play('left', true);
-                    // }
-                    // else if (this.cursors.right.isDown) {
-                    //     this.player.anims.play('right', true);
-                    // }
-                    // else if (this.cursors.up.isDown) {
-                    //     this.player.anims.play('up', true);
-                    // }
-                    // else if (this.cursors.down.isDown) {
-                    //     this.player.anims.play('down', true);
-                    // }
-                    // else {
-                    //     this.player.anims.stop();
-                    // }
                 }
             })
 
@@ -642,15 +617,12 @@
         margin: 15px;
         width: 20vw;
         height: 700px;
-        overflow-y: ;
         line-height: 0px;
         overflow-y: scroll;
-        //Scrollbar style for Firefox
         scrollbar-color: rgb(var(--v-theme-primary)) rgb(var(--v-theme-background));
         scrollbar-width: thin;
         }
 
-        //Scrollbar style for webkit browsers
         #aveine-invoice-list::-webkit-scrollbar {
         width: 8px;
         }
