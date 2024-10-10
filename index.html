@@ -493,18 +493,16 @@
                                 for (let u of [-2, -1, 0, 1,-2]) {
                                     if (!(i == 0 && u == 0)) {
                                         // parameters are x, y, width, height
-                                        const locationToPush = `${parseInt(ennemy.squarePosition.split('-')[0]) + i}-${parseInt(ennemy.squarePosition.split('-')[1]) + u}`
-                                        that.ennemy.forEach((ennemyLocation) => {
-
-                                            if (locationToPush !== ennemyLocation.squarePosition && !that.obstaclesLocation.includes(locationToPush)) {
-                                                if (locationToPush == ennemyLocation.squarePosition) {
-                                                    console.log(ennemyLocation.squarePosition, locationToPush, "and yet it get pushed")
-                                                }
-                                                movableLocationsRef.push(locationToPush)
-                                            }
-                                        })
+                                        const locationToPush = `${parseInt(ennemy.squarePosition.split('-')[0]) + (parseInt(i))}-${parseInt(ennemy.squarePosition.split('-')[1]) + (parseInt(u))}`
+                                        let ennemiesLocations = []
+                                        let playerLocations = []
+                                        await Promise.all(that.ennemy.map((ennemyLocation) => { ennemiesLocations.push(ennemyLocation.squarePosition)}))
+                                        await Promise.all(that.player.map((playerLocation) => { playerLocations.push(playerLocation.squarePosition)}))
+                                        console.log(playerLocations, locationToPush)
+                                        if (!ennemiesLocations.includes(locationToPush) && !playerLocations.includes(locationToPush) && !that.obstaclesLocation.includes(locationToPush)) {
+                                            movableLocationsRef.push(locationToPush)
+                                        }
                                     }
-
                                 }
                             }
                             let selectedLocation;
