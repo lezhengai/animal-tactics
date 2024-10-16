@@ -131,6 +131,86 @@
                     return player
                 },
 
+                // A* pathfinding algorithm
+                astar: function (start, end) {
+                    const openSet = [];
+                    const closedSet = [];
+                    openSet.push(start);
+
+                    while (openSet.length > 0) {
+                        // Find the node with the lowest total cost in the open set
+                        let currentNode = openSet[0];
+                        for (let i = 1; i < openSet.length; i++) {
+                            if (openSet[i].f < currentNode.f || (openSet[i].f === currentNode.f && openSet[i].h < currentNode.h)) {
+                                currentNode = openSet[i];
+                            }
+                        }
+
+                        // Remove the current node from the open set
+                        openSet.splice(openSet.indexOf(currentNode), 1);
+                        closedSet.push(currentNode);
+
+                        // If the current node is the goal, reconstruct the path
+
+                        if (currentNode.location.split('-')[0] === end.location.split('-')[0] && currentNode.location.split('-')[1] === end.location.split('-')[1]) {
+                            let path = [];
+                            let temp = currentNode;
+                            while (temp) {
+                                path.push(temp.location);
+                                temp = temp.parent;
+                            }
+                            return path.reverse();
+                        }
+
+                        // Generate neighbors of the current node
+                        const neighbors = [];
+                        const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]]; // Right, Down, Left, Up
+
+                        for (let dir of directions) {
+                            const neighborRow = parseInt(currentNode.location.split('-')[0]) + dir[0];
+                            const neighborCol = parseInt(currentNode.location.split('-')[1]) + dir[1];
+                            if (this.isValidCell(neighborRow, neighborCol)) {
+                                const neighbor = {
+                                    location: `${neighborRow}-${neighborCol}`,
+                                    g: currentNode.g + 1, // Cost to move to a neighboring cell is 1
+                                    h: this.heuristic({ row: neighborRow, col: neighborCol }, end),
+                                    f: 0,
+                                    parent: currentNode,
+                                };
+
+                                neighbor.f = neighbor.g + neighbor.h;
+
+                                // Check if the neighbor is already in the closed set
+                                if (closedSet.some((node) => node.location.split('-')[0] === neighbor.location.split('-')[0] && node.location.split('-')[1] === neighbor.location.split('-')[1])) {
+                                    continue;
+                                }
+
+                                // Check if the neighbor is already in the open set
+                                const openSetNode = openSet.find((node) => node.location.split('-')[1] === neighbor.location.split('-')[1] && node.location.split('-')[0] === neighbor.location.split('-')[0]);
+
+                                if (!openSetNode || neighbor.g < openSetNode.g) {
+                                console.log("neigrow", neighborRow, "neighcol", neighborCol)
+                                    openSet.push(neighbor);
+                                }
+                            }
+                        }
+                    }
+
+                    // No path found
+                    return [];
+                },
+
+
+                // Helper function to calculate the heuristic (Manhattan distance)
+                heuristic: function (a, b) {
+                    return Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
+                },
+
+                // Helper function to check if a cell is valid and not an obstacle
+                isValidCell: function (row, col) {
+                    return row >= 0 && row < 12 && col >= 0 && col < 12 && !this.obstaclesLocation.includes(`${row}-${col}`);
+                },
+
                 create: function () {
                     let map = this.add.tilemap('map');
 
@@ -157,7 +237,7 @@
                         }
                     }
                     this.obstaclesLocation = ["0-0", "1-0", "2-0", "3-0", "0-1" , "0-2", "4-2", "5-2", "6-2", "7-2", "4-3", "5-3", "6-3", "7-3", "4-4", "5-4", "6-4", "7-4", "11-4", "11-5", "11-6", "10-6", "9-6", "8-6"]
-                    
+
                     this.player = []
                     
                     
@@ -481,6 +561,8 @@
                             }
                         }
                         if (!winner && !playerTurn && this.ennemyTurn == index && ennemy.hp > 0 && ennemy.actionsLeft > 0 && (!ennemy.inMovement || (ennemy.inMovement && !ennemy.inMovement.is)) && !this.ennemiesAttacking && !this.ennemiesMoving) {
+                            let path = this.astar({location: ennemy.squarePosition}, {location: this.player[0].squarePosition})
+
                             ennemy.moveMode = true
                             ennemy.movableLocations = [];
                             let movableLocationsRef = ennemy.movableLocations
@@ -505,12 +587,24 @@
                                     }
                                 }
                             }
+
+
+
                             let selectedLocation;
+
+                            path.forEach((pathLocation) => {
+                                if (ennemy.movableLocations.includes(pathLocation)) {
+                                    selectedLocation = pathLocation
+                                } else {
+
+                                }
+                            })
                             that.player.forEach((i) => {
                                 if (ennemy.attackableLocations.includes(i.squarePosition)) {
                                     selectedLocation = i.squarePosition
                                 }
                             })
+
                             if (!selectedLocation) {
                                 selectedLocation = movableLocationsRef[Math.floor(Math.random() * movableLocationsRef.length)];
                             }
