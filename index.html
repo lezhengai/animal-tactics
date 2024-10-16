@@ -189,7 +189,6 @@
                                 const openSetNode = openSet.find((node) => node.location.split('-')[1] === neighbor.location.split('-')[1] && node.location.split('-')[0] === neighbor.location.split('-')[0]);
 
                                 if (!openSetNode || neighbor.g < openSetNode.g) {
-                                console.log("neigrow", neighborRow, "neighcol", neighborCol)
                                     openSet.push(neighbor);
                                 }
                             }
@@ -315,9 +314,11 @@
                         }
                         if (player.hp <= 0) {
                             player.actionsLeft = 0
+                            player.hasMoved = true
+                            player.doneAction = true
                         }
 
-                        if (!player.actionsLeft) {
+                        if (player.hasMoved && player.doneAction && !winner) {
                             player.tint = 0x808080
                         } else {
                             player.tint = 0xffffff
@@ -368,6 +369,7 @@
                                 player.actionUIText.destroy()
                                 player.alpha = 1;
                                 player.movementDone = true;
+                                player.hasMoved = true;
                                 player.doneAction = true;
                                 player.actionsLeft = 0 
                                 player.moveMode = false;
@@ -421,6 +423,9 @@
                                                 if (ennemyTarget) {
 
                                                 } else {
+                                                    player.hasMoved = true
+                                                    player.moveMode = false;
+                                                    console.log(player.actionsLeft)
                                                     offLocationClickEvent()
                                                     that.physics.moveToObject(player, that.squares[location], 500);
                                                     player.nameText.alpha = 0
@@ -432,10 +437,8 @@
                                                     player.actionUIText.destroy()
                                                     player.alpha = 1;
                                                     player.movementDone = true;
-                                                    player.moveMode = false;
+
                                                     player.actionsLeft--
-                                                    player.hasMoved = true
-                                                    that.timeout(1000)
                                                     if (!player.doneAction) {
                                                         that.timeout(1000)
                                                         player.moveMode = true;
@@ -511,7 +514,7 @@
                     }
 
 
-                    if (this.player.every( v => v.actionsLeft == 0) && !winner) {
+                    if (this.player.every( v => v.hasMoved && v.doneAction) && !winner) {
                         playerTurn = false;
                     }
                     
@@ -561,57 +564,67 @@
                             }
                         }
                         if (!winner && !playerTurn && this.ennemyTurn == index && ennemy.hp > 0 && ennemy.actionsLeft > 0 && (!ennemy.inMovement || (ennemy.inMovement && !ennemy.inMovement.is)) && !this.ennemiesAttacking && !this.ennemiesMoving) {
-                            let path = this.astar({location: ennemy.squarePosition}, {location: this.player[0].squarePosition})
+                            let playerToTarget = await this.player.reduce((acc, curr) => curr.hp < acc.hp && curr.hp > 0 ? curr : acc);
 
+                            let path = playerToTarget ? this.astar({location: ennemy.squarePosition}, {location: playerToTarget.squarePosition ? playerToTarget.squarePosition : null}) : null
+                            console.log("target player ", playerToTarget.name)
                             ennemy.moveMode = true
                             ennemy.movableLocations = [];
-                            let movableLocationsRef = ennemy.movableLocations
+                            ennemy.movableLocations
                             ennemy.attackableLocations = [`${parseInt(ennemy.squarePosition.split('-')[0]) + 1}-${parseInt(ennemy.squarePosition.split('-')[1])}`,
                                                           `${parseInt(ennemy.squarePosition.split('-')[0]) - 1}-${parseInt(ennemy.squarePosition.split('-')[1])}`,
                                                           `${parseInt(ennemy.squarePosition.split('-')[0])}-${parseInt(ennemy.squarePosition.split('-')[1]) + 1}`,
                                                           `${parseInt(ennemy.squarePosition.split('-')[0])}-${parseInt(ennemy.squarePosition.split('-')[1]) - 1}` ]
                             let that = this;
+                            let ennemiesLocations = []
+                            let playerLocations = []
+                            await Promise.all(that.ennemy.map((ennemyLocation) => { ennemiesLocations.push(ennemyLocation.squarePosition) }))
+                            await Promise.all(that.player.map((playerLocation) => { playerLocations.push(playerLocation.squarePosition) }))
                             for (let i of [-2, -1, 0, 1, 2]) {
                                 for (let u of [-2, -1, 0, 1,-2]) {
                                     if (!(i == 0 && u == 0)) {
                                         // parameters are x, y, width, height
                                         const locationToPush = `${parseInt(ennemy.squarePosition.split('-')[0]) + (parseInt(i))}-${parseInt(ennemy.squarePosition.split('-')[1]) + (parseInt(u))}`
-                                        let ennemiesLocations = []
-                                        let playerLocations = []
-                                        await Promise.all(that.ennemy.map((ennemyLocation) => { ennemiesLocations.push(ennemyLocation.squarePosition)}))
-                                        await Promise.all(that.player.map((playerLocation) => { playerLocations.push(playerLocation.squarePosition)}))
-                                        console.log(playerLocations, locationToPush)
-                                        if (!ennemiesLocations.includes(locationToPush) && !playerLocations.includes(locationToPush) && !that.obstaclesLocation.includes(locationToPush)) {
-                                            movableLocationsRef.push(locationToPush)
+                                        
+                                        if (locationToPush.length == 3 && !ennemiesLocations.includes(locationToPush) && !playerLocations.includes(locationToPush) && !that.obstaclesLocation.includes(locationToPush)) {
+                                            ennemy.movableLocations.push(locationToPush)
                                         }
                                     }
                                 }
                             }
-
+                            console.log(ennemy.movableLocations, playerLocations)
 
 
                             let selectedLocation;
+                            if (path) {
+                                path.forEach((pathLocation) => {
+                                    if (ennemy.movableLocations.includes(pathLocation)) {
+                                        selectedLocation = pathLocation
+                                    } else {
 
-                            path.forEach((pathLocation) => {
-                                if (ennemy.movableLocations.includes(pathLocation)) {
-                                    selectedLocation = pathLocation
-                                } else {
-
-                                }
-                            })
-                            that.player.forEach((i) => {
-                                if (ennemy.attackableLocations.includes(i.squarePosition)) {
-                                    selectedLocation = i.squarePosition
-                                }
-                            })
-
-                            if (!selectedLocation) {
-                                selectedLocation = movableLocationsRef[Math.floor(Math.random() * movableLocationsRef.length)];
+                                    }
+                                })
                             }
 
+                            if (!ennemy.doneAction) {
+                                that.player.forEach((i) => {
+                                    if (ennemy.attackableLocations.includes(i.squarePosition)) {
+                                        selectedLocation = i.squarePosition
+                                    }
+                                })
+                            }
+
+
+                            if (!selectedLocation) {
+                                selectedLocation = ennemy.movableLocations[Math.floor(Math.random() * ennemy.movableLocations.length)];
+                            }
+
+                            
                             if (ennemy.moveMode) {
                                 let playerTarget = that.player.find((element) => element.squarePosition == selectedLocation)
+                                console.log(playerTarget)
                                 if (playerTarget && !ennemy.doneAction) {
+                                    console.log("attacking to ", selectedLocation)
                                     that.cameras.main.shake(200);
                                     let damage = ennemy.attack - playerTarget.defense
                                     if (damage >= 0) {
@@ -642,6 +655,7 @@
                                     ennemy.doneAction = true
                                 } else if (!ennemy.hasMoved) {
                                     if (that.squares[selectedLocation]) {
+                                        console.log("moving to ", selectedLocation)
                                         that.physics.moveToObject(ennemy, that.squares[selectedLocation], 500);
                                         this.ennemiesMoving = true
                                         ennemy.inMovement = { is: true, destination: that.squares[selectedLocation] }
