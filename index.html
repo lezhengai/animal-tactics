@@ -20,6 +20,7 @@
                     this.load.tilemapTiledJSON('map', 'assets/map/map1.json');
 
                     this.load.spritesheet('player', 'assets/sprites/character_sprites.png', { frameWidth: 100, frameHeight: 100 });
+                    this.load.spritesheet('raccoon', 'assets/sprites/raccoon_sprites.png', { frameWidth: 100, frameHeight: 100 });
                     this.load.spritesheet('zone', 'assets/sprites/zone_spritess.png', { frameWidth: 100, frameHeight: 100 });
                     this.load.image("sky", "assets/sky.png");
                 },
@@ -95,7 +96,7 @@
                  *
                  **/
                 createPlayer: function (name, sprite, position, hp, attack, defense, actionsPerTurn, playerType) {
-                    let player = this.physics.add.sprite(0, 0, 'player', sprite)
+                    let player = this.physics.add.sprite(0, 0, 'raccoon', sprite)
                     player.squarePosition = position
                     if (playerType == "player")
                         player.setInteractive()
@@ -121,8 +122,8 @@
                     const animationKey = Math.floor(Math.random() * 9999);
                     this.anims.create({
                         key: animationKey.toString(),
-                        frames: this.anims.generateFrameNumbers('player', { frames: [sprite-6, sprite, sprite-6, sprite] }),
-                        frameRate: 2,
+                        frames: this.anims.generateFrameNumbers('raccoon', { frames: [0, 1, 2, 3] }),
+                        frameRate: 5,
                         repeat: -1
                     });
 
@@ -207,7 +208,11 @@
 
                 // Helper function to check if a cell is valid and not an obstacle
                 isValidCell: function (row, col) {
-                    return row >= 0 && row < 12 && col >= 0 && col < 12 && !this.obstaclesLocation.includes(`${row}-${col}`);
+                    let ennemyLocation = []
+                    this.ennemy.forEach((ennemy) => {
+                        ennemyLocation.push(ennemy.squarePosition)
+                    })
+                    return row >= 0 && row < 12 && col >= 0 && col < 12 && !this.obstaclesLocation.includes(`${row}-${col}`) && !ennemyLocation.includes(`${row}-${col}`);
                 },
 
                 create: function () {
@@ -253,9 +258,13 @@
                     // ennemy1.healthBar.y = ennemy1.y - 50
                     this.ennemy = []
                     let ennemy1 = this.createPlayer("A", 6, "10-1", 5, 2, 1, 2, "ennemy")
+                    ennemy1.setFlipX(true);
                     let ennemy2 = this.createPlayer("B", 6, "10-2", 5, 2, 1, 2, "ennemy")
+                    ennemy2.setFlipX(true);
                     let ennemy3 = this.createPlayer("C", 6, "11-1", 5, 2, 1, 2, "ennemy")
+                    ennemy3.setFlipX(true);
                     let ennemy4 = this.createPlayer("D", 6, "11-2", 5, 2, 1, 2, "ennemy")
+                    ennemy4.setFlipX(true);
                     charactersLayer.add([ennemy1, ennemy2, ennemy3, ennemy4])
                     this.ennemy.push(ennemy1);
                     this.ennemy.push(ennemy2);
@@ -287,7 +296,9 @@
                                     player.movableLocations = []
                                     player.attackableLocations = []
                                     player.actionUI.destroy()
-                                    player.actionUIText.destroy()
+                                    player.actionUITextInfo.destroy()
+                                    player.actionUIItemText.destroy()
+                                    player.actionUIWaitText.destroy()
                                     player.moveMode = false;
                                     player.alpha = 1;
                                 }
@@ -317,7 +328,9 @@
                             player.hasMoved = true
                             player.doneAction = true
                         }
-
+                        /**
+                         * Player turn finished
+                         */
                         if (player.hasMoved && player.doneAction && !winner) {
                             player.tint = 0x808080
                         } else {
@@ -342,15 +355,121 @@
 
                         if (player.moveMode && (!player.movableLocations || (player.movableLocations && player.movableLocations.length == 0))) {
                             let that = this;
+                            this.player.map((playerRef) => {
+                                if (player.hp > 0 && playerRef.actionUI && playerRef != player) {
+                                    playerRef.movableLocations.forEach(location => {
+                                        if (that.squares[location]) {
+                                            that.squares[location].alpha = 0.1
+                                            that.squares[location].off('pointerdown')
+                                        }
+                                    });
+                                    playerRef.attackableLocations.forEach(location => {
+                                        if (that.squares[location]) {
+                                            that.squares[location].alpha = 0.1
+                                            that.squares[location].off('pointerdown')
+                                        }
+                                    });
+                                    playerRef.movableLocations = []
+                                    playerRef.attackableLocations = []
+                                    playerRef.actionUI.destroy()
+                                    playerRef.actionUITextInfo.destroy()
+                                    playerRef.actionUIWaitText.destroy()
+                                    playerRef.moveMode = false;
+                                    playerRef.alpha = 1;
+                                }
+                            })
                             player.movableLocations  = [];
                             player.actionUI = this.add.graphics();
                             player.actionUI.lineStyle(1, 0xffffff);
                             player.actionUI.fillStyle("#000000")
-                            player.actionUI.fillRect(100, 50, 100, 60);
-                            player.actionUIText = this.add.text(110, 60, `Player ${player.name} \n Wait`, { fontSize: "18px", color: "#FFFFFF", fontFamily: "Impact" });
-                            player.actionUIText.setInteractive();
+                            player.actionUI.fillRect(100, 50, 150, 90);
+                            player.actionUITextInfo = this.add.text(110, 60, `Player ${player.name} | HP : ${player.hp}/${player.maxHP}`, { fontSize: "18px", color: "#FFFFFF", fontFamily: "Impact" });
+                            player.actionUIWaitText = this.add.text(110, 90, `> Wait`, { fontSize: "18px", color: "#FFFFFF", fontFamily: "Impact" });
+                            player.actionUIItemText = this.add.text(110, 120, `> Item`, { fontSize: "18px", color: "#FFFFFF", fontFamily: "Impact" });
+                            player.actionUIItemText.setInteractive();
+                            player.actionUIWaitText.setInteractive();
 
-                            player.actionUIText.on('pointerdown', function (pointer) { 
+                            player.actionUIItemText.on('pointerdown', function (pointer) {
+                                player.actionUiItemMenu = that.add.graphics();
+                                player.actionUiItemMenu.lineStyle(1, 0xffffff);
+                                player.actionUiItemMenu.fillStyle("#000000")
+                                player.actionUiItemMenu.fillRect(300, 80, 150, 90);
+                                player.actionUIItemMenuElement = that.add.text(310, 90, `Potion`, { fontSize: "18px", color: "#FFFFFF", fontFamily: "Impact" });
+                                player.actionUIItemMenuElement.setInteractive()
+                                player.actionUIItemMenuElement.on('pointerdown', function (pointer) {
+                                    player.movableLocations.forEach(location => {
+                                        if (that.squares[location]) {
+                                            that.squares[location].alpha = 0.1
+                                            that.squares[location].off('pointerdown')
+                                        }
+                                    });
+                                    that.player.forEach((playerRef) => {
+                                        playerRef.removeInteractive() 
+                                    })
+                                    player.attackableLocations = [`${parseInt(player.squarePosition.split('-')[0]) + 1}-${parseInt(player.squarePosition.split('-')[1])}`,
+                                    `${parseInt(player.squarePosition.split('-')[0]) - 1}-${parseInt(player.squarePosition.split('-')[1])}`,
+                                    `${parseInt(player.squarePosition.split('-')[0])}-${parseInt(player.squarePosition.split('-')[1]) + 1}`,
+                                    `${parseInt(player.squarePosition.split('-')[0])}-${parseInt(player.squarePosition.split('-')[1]) - 1}`,
+                                    ]
+
+                                    player.attackableLocations.forEach(location => {
+                                        if (that.squares[location]) {
+                                            that.squares[location].alpha = 1
+                                            that.squares[location].on('pointerdown', async function (pointer) {
+                                                let playerTarget = that.player.find((i) => i.squarePosition == location)
+                                                if (playerTarget) {
+                                                    offLocationClickEvent()
+                                                    that.cameras.main.shake(200);
+                                                    that.player.forEach((playerRef) => {
+                                                        playerRef.setInteractive()
+                                                    })
+                                                    player.y -= 20
+                                                    playerTarget.y -= 20
+                                                    document.getElementById("logs").innerHTML += `<p>Player ${player.name} heals player ${playerTarget.name}, 5 hp gained</p><br>`
+                                                    playerTarget.hp = playerTarget.hp + 5
+                                                    if (playerTarget.hp > playerTarget.maxHP) { playerTarget.hp = playerTarget.maxHP}
+                                                    playerTarget.healthBar.scaleX = playerTarget.hp / playerTarget.maxHP;
+                                                    let damageText = that.add.text(0, 0, `+5`, { fontSize: "32px", color: "#2AAA8A", fontFamily: "Impact" });
+                                                    damageText.alpha = 1
+                                                    damageText.setPosition(playerTarget.x + 50, playerTarget.y - 50);
+                                                    that.tweens.add({
+                                                        targets: damageText,
+                                                        alpha: 0,
+                                                        y: damageText.y - 50,
+                                                        duration: 3000,
+                                                        ease: 'Power2'
+                                                    }, that);
+                                                    await that.timeout(1000)
+                                                    player.y += 20
+                                                    playerTarget.y += 20
+
+                                                    player.movableLocations = []
+                                                    player.actionUI.destroy()
+                                                    player.actionUITextInfo.destroy()
+                                                    player.actionUIItemText.destroy()
+                                                    player.actionUIWaitText.destroy()
+                                                    player.actionUiItemMenu.destroy()
+                                                    player.actionUIItemMenuElement.destroy()
+                                                    player.alpha = 1;
+                                                    player.actionDone = true
+                                                    player.moveMode = false;
+                                                    player.actionsLeft--
+                                                    player.doneAction = true
+
+                                                    if (!player.hasMoved) {
+                                                        that.timeout(1000)
+                                                        player.moveMode = true;
+                                                    } else {
+                                                        player.moveMode = false;
+                                                    }
+                                                }
+                                            })
+                                        }
+                                    })
+                                })
+                            })
+
+                            player.actionUIWaitText.on('pointerdown', function (pointer) { 
                                 player.attackableLocations.forEach(location => {
                                     if (that.squares[location]) {
                                         that.squares[location].alpha = 0.1
@@ -366,7 +485,11 @@
                                 player.attackableLocations = []
                                 player.movableLocations = []
                                 player.actionUI.destroy()
-                                player.actionUIText.destroy()
+                                player.actionUITextInfo.destroy()
+                                player.actionUIItemText.destroy()
+                                player.actionUIWaitText.destroy()
+                                if(player.actionUiItemMenu) { player.actionUiItemMenu.destroy() }
+                                if(player.actionUIItemMenuElement) { player.actionUIItemMenuElement.destroy() }
                                 player.alpha = 1;
                                 player.movementDone = true;
                                 player.hasMoved = true;
@@ -434,7 +557,9 @@
                                                     player.squarePosition = location
                                                     player.movableLocations = []
                                                     player.actionUI.destroy()
-                                                    player.actionUIText.destroy()
+                                                    player.actionUITextInfo.destroy()
+                                                    player.actionUIItemText.destroy()
+                                                    player.actionUIWaitText.destroy()
                                                     player.alpha = 1;
                                                     player.movementDone = true;
 
@@ -485,7 +610,9 @@
                                                     }
                                                     player.movableLocations = []
                                                     player.actionUI.destroy()
-                                                    player.actionUIText.destroy()
+                                                    player.actionUITextInfo.destroy()
+                                                    player.actionUIItemText.destroy()
+                                                    player.actionUIWaitText.destroy()
                                                     player.alpha = 1;
                                                     player.actionDone = true
                                                     player.moveMode = false;
@@ -564,9 +691,18 @@
                             }
                         }
                         if (!winner && !playerTurn && this.ennemyTurn == index && ennemy.hp > 0 && ennemy.actionsLeft > 0 && (!ennemy.inMovement || (ennemy.inMovement && !ennemy.inMovement.is)) && !this.ennemiesAttacking && !this.ennemiesMoving) {
-                            let playerToTarget = await this.player.reduce((acc, curr) => curr.hp < acc.hp && curr.hp > 0 ? curr : acc);
+                            let playerToTarget = null
+                            await Promise.all(this.player.map((player) => {
+                                if (player.squarePosition) {
+                                    if (!playerToTarget) {
+                                        playerToTarget = player
+                                    } else if (playerToTarget.hp > player.hp) {
+                                        playerToTarget = player
+                                    }
+                                }
+                            }));
 
-                            let path = playerToTarget ? this.astar({location: ennemy.squarePosition}, {location: playerToTarget.squarePosition ? playerToTarget.squarePosition : null}) : null
+                            let path = playerToTarget ? this.astar({location: ennemy.squarePosition}, {location: playerToTarget.squarePosition}) : null
                             console.log("target player ", playerToTarget.name)
                             ennemy.moveMode = true
                             ennemy.movableLocations = [];
